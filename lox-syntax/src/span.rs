@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::Range;
 
 /// Represents a segment of source text, source[lo..hi]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Span {
     lo: usize,
     hi: usize,
@@ -22,6 +22,13 @@ impl Span {
 
     pub fn range(&self) -> Range<usize> {
         self.lo..self.hi
+    }
+
+    pub fn offset(lo: usize, offset: usize) -> Self {
+        Self {
+            lo,
+            hi: lo + offset,
+        }
     }
 }
 

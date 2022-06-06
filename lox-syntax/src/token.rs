@@ -3,11 +3,26 @@ use std::mem;
 
 use crate::span::Span;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub span: Span,
 }
 
+impl Token {
+    pub fn new(kind: TokenKind, span: Span) -> Self {
+        Self { kind, span }
+    }
+}
+
+#[macro_export]
+macro_rules! token {
+    ($kind:expr, $lo:expr, $offset:expr) => {
+        crate::token::Token::new($kind, crate::span::Span::offset($lo, $offset))
+    };
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     // Single-character tokens
     LeftParen,
