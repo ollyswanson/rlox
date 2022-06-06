@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "lox-syntax",
+    "lox"
+]
