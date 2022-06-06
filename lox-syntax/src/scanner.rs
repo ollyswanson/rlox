@@ -1,8 +1,6 @@
 use std::iter::{Enumerate, Peekable};
 use std::str::Chars;
 
-use itertools::Itertools;
-
 use crate::span::Span;
 use crate::token;
 use crate::token::{Token, TokenKind};
@@ -34,7 +32,7 @@ static KEYWORDS: phf::Map<&'static str, TokenKind> = phf::phf_map! {
     "while" => TokenKind::While,
 };
 
-struct Scanner<'a> {
+struct ScannerInner<'a> {
     /// The source
     source: &'a str,
     /// An iterator over the chars in the source.
@@ -45,7 +43,7 @@ struct Scanner<'a> {
     eof: bool,
 }
 
-impl Scanner<'_> {
+impl ScannerInner<'_> {
     fn scan_token(&mut self) -> ScanResult<Token> {
         use TokenKind::*;
 
@@ -159,7 +157,7 @@ impl Scanner<'_> {
     }
 }
 
-impl<'a> Scanner<'a> {
+impl<'a> ScannerInner<'a> {
     pub fn new(source: &'a str) -> Self {
         Self {
             source,
@@ -211,37 +209,39 @@ impl<'a> Scanner<'a> {
     }
 }
 
-struct Lexer<'a> {
-    scanner: Scanner<'a>,
+struct Scanner<'a> {
+    inner: ScannerInner<'a>,
 }
 
-impl<'a> Lexer<'a> {
+impl<'a> Scanner<'a> {
     pub fn new(source: &'a str) -> Self {
         Self {
-            scanner: Scanner::new(source),
+            inner: ScannerInner::new(source),
         }
     }
 }
 
-impl<'a> Iterator for Lexer<'a> {
+impl<'a> Iterator for Scanner<'a> {
     type Item = ScanResult<Token>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.scanner.eof {
+        if self.inner.eof {
             None
         } else {
-            Some(self.scanner.scan_token())
+            Some(self.inner.scan_token())
         }
     }
-}
-
-pub fn tokenize(source: &str) -> (Vec<Token>, Vec<ScanError>) {
-    Lexer::new(source).partition_result()
 }
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use super::*;
+
+    fn tokenize(source: &str) -> (Vec<Token>, Vec<ScanError>) {
+        Scanner::new(source).partition_result()
+    }
 
     macro_rules! compare_tokens {
         ($expected:ident, $actual:ident) => {
