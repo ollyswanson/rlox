@@ -3,15 +3,7 @@ use std::str::Chars;
 
 use crate::span::Span;
 use crate::token;
-use crate::token::{Token, TokenKind};
-
-pub type ScanResult<T> = Result<T, ScanError>;
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum ScanError {
-    UnrecognizedToken { span: Span, unrecognized: char },
-    UnterminatedString(Span),
-}
+use crate::token::{ScanError, Token, TokenKind};
 
 static KEYWORDS: phf::Map<&'static str, TokenKind> = phf::phf_map! {
     "and" => TokenKind::And,
@@ -44,7 +36,7 @@ struct ScannerInner<'a> {
 }
 
 impl ScannerInner<'_> {
-    fn scan_token(&mut self) -> ScanResult<Token> {
+    fn scan_token(&mut self) -> Token {
         use TokenKind::*;
 
         if let Some((start, c)) = self.source_iter.next() {
@@ -53,72 +45,65 @@ impl ScannerInner<'_> {
                 // Ignore whitespace
                 ' ' | '\n' | '\r' | '\t' => self.scan_token(),
                 // Single character tokens,
-                '(' => Ok(token!(LeftParen, start, 1)),
-                ')' => Ok(token!(RightParen, start, 1)),
-                '{' => Ok(token!(LeftBrace, start, 1)),
-                '}' => Ok(token!(RightBrace, start, 1)),
-                ',' => Ok(token!(Comma, start, 1)),
-                '.' => Ok(token!(Dot, start, 1)),
-                '-' => Ok(token!(Minus, start, 1)),
-                '+' => Ok(token!(Plus, start, 1)),
-                ';' => Ok(token!(Semicolon, start, 1)),
-                '*' => Ok(token!(Star, start, 1)),
+                '(' => token!(LeftParen, start, 1),
+                ')' => token!(RightParen, start, 1),
+                '{' => token!(LeftBrace, start, 1),
+                '}' => token!(RightBrace, start, 1),
+                ',' => token!(Comma, start, 1),
+                '.' => token!(Dot, start, 1),
+                '-' => token!(Minus, start, 1),
+                '+' => token!(Plus, start, 1),
+                ';' => token!(Semicolon, start, 1),
+                '*' => token!(Star, start, 1),
                 '/' => {
                     if self.peek().map_or(false, |c| c == '/') {
                         self.take_until('\n');
                         self.scan_token()
                     } else {
-                        Ok(token!(Slash, start, 1))
+                        token!(Slash, start, 1)
                     }
                 }
-                '!' => {
-                    Ok(self.take_select('=', token!(BangEqual, start, 2), token!(Bang, start, 1)))
-                }
-                '>' => Ok(self.take_select(
+                '!' => self.take_select('=', token!(BangEqual, start, 2), token!(Bang, start, 1)),
+                '>' => self.take_select(
                     '=',
                     token!(GreaterEqual, start, 2),
                     token!(Greater, start, 1),
-                )),
-                '<' => {
-                    Ok(self.take_select('=', token!(LessEqual, start, 2), token!(Less, start, 1)))
-                }
-                '=' => Ok(self.take_select(
-                    '=',
-                    token!(EqualEqual, start, 2),
-                    token!(Equal, start, 1),
-                )),
+                ),
+                '<' => self.take_select('=', token!(LessEqual, start, 2), token!(Less, start, 1)),
+                '=' => self.take_select('=', token!(EqualEqual, start, 2), token!(Equal, start, 1)),
                 '"' => self.string(),
                 c if c.is_digit(10) => self.number(),
                 c if c.is_alphabetic() || c == '_' => self.identifier(),
-                unrecognized => Err(ScanError::UnrecognizedToken {
-                    span: Span::offset(self.start, 1),
-                    unrecognized,
-                }),
+                unrecognized => token!(
+                    Error(ScanError::UnrecognizedToken { unrecognized }),
+                    start,
+                    1
+                ),
             }
         } else {
             self.eof = true;
-            Ok(token!(Eof, self.source.len(), 0))
+            token!(Eof, self.source.len(), 0)
         }
     }
 
-    fn string(&mut self) -> ScanResult<Token> {
+    fn string(&mut self) -> Token {
         self.take_until('"');
         if let Some(close) = self.source_iter.next() {
             let string = self.source[self.start + 1..close.0].to_owned();
 
-            Ok(Token::new(
+            Token::new(
                 TokenKind::String(string),
                 Span::new(self.start, close.0 + 1),
-            ))
+            )
         } else {
-            Err(ScanError::UnterminatedString(Span::new(
-                self.start,
-                self.source.len() - 1,
-            )))
+            Token::new(
+                TokenKind::Error(ScanError::UnterminatedString),
+                Span::new(self.start, self.source.len() - 1),
+            )
         }
     }
 
-    fn number(&mut self) -> ScanResult<Token> {
+    fn number(&mut self) -> Token {
         self.take_while(char::is_numeric);
 
         match (self.peek(), self.peek_nth(1)) {
@@ -132,27 +117,21 @@ impl ScannerInner<'_> {
         // safe to unwrap as slice will be of form "x" | "x.y"
         let number: f64 = self.source[self.start..self.pos()].parse().unwrap();
 
-        Ok(Token::new(
-            TokenKind::Number(number),
-            Span::new(self.start, self.pos()),
-        ))
+        Token::new(TokenKind::Number(number), Span::new(self.start, self.pos()))
     }
 
-    fn identifier(&mut self) -> ScanResult<Token> {
+    fn identifier(&mut self) -> Token {
         self.take_while(|c| c.is_alphanumeric() || c == '_');
 
         let identifier = &self.source[self.start..self.pos()];
 
         if let Some(identifier) = KEYWORDS.get(identifier) {
-            Ok(Token::new(
-                identifier.clone(),
-                Span::new(self.start, self.pos()),
-            ))
+            Token::new(identifier.clone(), Span::new(self.start, self.pos()))
         } else {
-            Ok(Token::new(
+            Token::new(
                 TokenKind::Identifier(identifier.to_owned()),
                 Span::new(self.start, self.pos()),
-            ))
+            )
         }
     }
 }
@@ -209,7 +188,7 @@ impl<'a> ScannerInner<'a> {
     }
 }
 
-struct Scanner<'a> {
+pub struct Scanner<'a> {
     inner: ScannerInner<'a>,
 }
 
@@ -222,7 +201,7 @@ impl<'a> Scanner<'a> {
 }
 
 impl<'a> Iterator for Scanner<'a> {
-    type Item = ScanResult<Token>;
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.inner.eof {
@@ -235,12 +214,10 @@ impl<'a> Iterator for Scanner<'a> {
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
-
     use super::*;
 
-    fn tokenize(source: &str) -> (Vec<Token>, Vec<ScanError>) {
-        Scanner::new(source).partition_result()
+    fn tokenize(source: &str) -> Vec<Token> {
+        Scanner::new(source).collect()
     }
 
     macro_rules! compare_tokens {
@@ -272,9 +249,7 @@ mod tests {
             token!(Eof, 11, 0),
         ];
 
-        let (tokens, errors) = tokenize(source);
-
-        assert!(errors.is_empty());
+        let tokens = tokenize(source);
         compare_tokens!(expected, tokens);
     }
 
@@ -294,9 +269,8 @@ mod tests {
             token!(Eof, 12, 0),
         ];
 
-        let (tokens, errors) = tokenize(source);
+        let tokens = tokenize(source);
 
-        assert!(errors.is_empty());
         compare_tokens!(expected, tokens);
     }
 
@@ -308,9 +282,8 @@ mod tests {
         "#;
         let expected = vec![token!(Eof, 38, 0)];
 
-        let (tokens, errors) = tokenize(source);
+        let tokens = tokenize(source);
 
-        assert!(errors.is_empty());
         compare_tokens!(expected, tokens);
     }
 
@@ -334,20 +307,24 @@ mod tests {
             token!(TokenKind::Eof, 73, 0),
         ];
 
-        let (tokens, errors) = tokenize(source);
+        let tokens = tokenize(source);
 
-        assert!(errors.is_empty());
         compare_tokens!(expected, tokens);
     }
 
     #[test]
     fn produces_an_error_when_there_is_an_unterminated_string() {
+        use TokenKind::*;
+
         let source = r#""This is an unterminated string"#;
+        let expected = vec![
+            token!(Error(ScanError::UnterminatedString), 0, 30),
+            token!(Eof, 31, 0),
+        ];
 
-        let (tokens, errors) = tokenize(source);
+        let tokens = tokenize(source);
 
-        assert_eq!(ScanError::UnterminatedString(Span::new(0, 30)), errors[0]);
-        assert_eq!(TokenKind::Eof, tokens[0].kind)
+        compare_tokens!(expected, tokens);
     }
 
     #[test]
@@ -369,9 +346,8 @@ mod tests {
             token!(Eof, 57, 0),
         ];
 
-        let (tokens, errors) = tokenize(source);
+        let tokens = tokenize(source);
 
-        assert!(errors.is_empty());
         compare_tokens!(expected, tokens);
     }
 
@@ -394,9 +370,8 @@ mod tests {
             token!(Eof, 73, 0),
         ];
 
-        let (tokens, errors) = tokenize(source);
+        let tokens = tokenize(source);
 
-        assert!(errors.is_empty());
         compare_tokens!(expected, tokens);
     }
 
@@ -456,9 +431,8 @@ mod tests {
             token!(Eof, 257, 0),
         ];
 
-        let (tokens, errors) = tokenize(source);
+        let tokens = tokenize(source);
 
-        assert!(errors.is_empty());
         compare_tokens!(expected, tokens);
     }
 }

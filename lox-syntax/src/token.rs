@@ -72,6 +72,9 @@ pub enum TokenKind {
 
     // Special
     Eof,
+
+    // Error handling
+    Error(ScanError),
 }
 
 impl TokenKind {
@@ -80,6 +83,14 @@ impl TokenKind {
         mem::discriminant(self) == mem::discriminant(other)
     }
 }
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ScanError {
+    UnrecognizedToken { unrecognized: char },
+    UnterminatedString,
+}
+
+impl ScanError {}
 
 impl Display for TokenKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -125,6 +136,7 @@ impl Display for TokenKind {
             Var => write!(f, "var"),
             While => write!(f, "while"),
             Eof => write!(f, ""),
+            Error(_) => write!(f, "error"),
         }
     }
 }
