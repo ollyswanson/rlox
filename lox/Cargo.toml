@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+lox-syntax = { path = "../lox-syntax" }
+tree-walk = { path = "../tree-walk" }
 clap = { version = "3.1.18", features = ["derive"] }

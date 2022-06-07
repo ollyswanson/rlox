@@ -53,29 +53,29 @@ pub enum Value {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Literal {
-    span: Span,
-    value: Value,
+    pub span: Span,
+    pub value: Value,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Unary {
-    span: Span,
-    op: UnOp,
-    expr: Box<Expr>,
+    pub span: Span,
+    pub op: UnOp,
+    pub expr: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
-    span: Span,
-    op: BinOp,
-    left: Box<Expr>,
-    right: Box<Expr>,
+    pub span: Span,
+    pub op: BinOp,
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Grouping {
-    span: Span,
-    expr: Box<Expr>,
+    pub span: Span,
+    pub expr: Box<Expr>,
 }
 
 impl Expr {

@@ -144,6 +144,8 @@ name = "lox"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "lox-syntax",
+ "tree-walk",
 ]
 
 [[package]]
