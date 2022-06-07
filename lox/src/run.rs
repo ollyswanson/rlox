@@ -29,7 +29,10 @@ fn run_repl() -> Result<(), Box<dyn std::error::Error>> {
     stdout.lock().flush()?;
 
     for line in io::stdin().lock().lines() {
-        run(&line?, &mut interpreter)?;
+        match run(&line?, &mut interpreter) {
+            Ok(_) => {}
+            Err(e) => eprintln!("{}", e),
+        };
 
         stdout.lock().write_all("> ".as_ref())?;
         stdout.lock().flush()?;
@@ -40,15 +43,8 @@ fn run_repl() -> Result<(), Box<dyn std::error::Error>> {
 
 fn run(source: &str, interpreter: &mut Interpreter) -> Result<(), Box<dyn std::error::Error>> {
     let mut parser = Parser::new(source);
-    let expr = parser.parse_expr();
-
-    match expr {
-        Ok(e) => {
-            let value = interpreter.evaluate_expr(&e);
-            println!("{}", value.unwrap())
-        }
-        Err(e) => {}
-    }
+    let statements = parser.parse();
+    interpreter.interpret(&statements)?;
 
     Ok(())
 }
