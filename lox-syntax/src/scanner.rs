@@ -115,9 +115,12 @@ impl ScannerInner<'_> {
         }
 
         // safe to unwrap as slice will be of form "x" | "x.y"
-        let number: f64 = self.source[self.start..self.pos()].parse().unwrap();
+        let number: f64 = dbg!(&self.source[self.start..self.pos()]).parse().unwrap();
 
-        Token::new(TokenKind::Number(number), Span::new(self.start, self.pos()))
+        Token::new(
+            TokenKind::Number(dbg!(number)),
+            Span::new(self.start, self.pos()),
+        )
     }
 
     fn identifier(&mut self) -> Token {
@@ -158,7 +161,7 @@ impl<'a> ScannerInner<'a> {
     fn pos(&mut self) -> usize {
         match self.source_iter.peek().map(|(i, _c)| *i) {
             Some(i) => i,
-            None => self.source.len() - 1,
+            None => self.source.len(),
         }
     }
 

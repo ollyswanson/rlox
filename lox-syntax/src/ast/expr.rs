@@ -1,11 +1,24 @@
 use std::fmt::{Display, Formatter, Write};
 
 use crate::span::Span;
+use crate::token::{Token, TokenKind};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum UnOp {
     Bang,
     Minus,
+}
+
+impl UnOp {
+    pub fn from_token(token: &Token) -> Option<Self> {
+        use TokenKind::*;
+
+        match token.kind {
+            Bang => Some(UnOp::Bang),
+            Minus => Some(UnOp::Minus),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -22,14 +35,15 @@ pub enum BinOp {
     NotEqual,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Value(Value),
+    Primary(Primary),
     Unary(Unary),
     Binary(Binary),
     Grouping(Grouping),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Nil,
     Boolean(bool),
@@ -37,12 +51,20 @@ pub enum Value {
     String(String),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Primary {
+    span: Span,
+    value: Value,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Unary {
     span: Span,
     op: UnOp,
     expr: Box<Expr>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     span: Span,
     op: BinOp,
@@ -50,12 +72,45 @@ pub struct Binary {
     right: Box<Expr>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Grouping {
     span: Span,
     expr: Box<Expr>,
 }
 
-// impl new
+impl Expr {
+    pub fn span(&self) -> Span {
+        use Expr::*;
+
+        match self {
+            Primary(p) => p.span,
+            Unary(u) => u.span,
+            Binary(b) => b.span,
+            Grouping(g) => g.span,
+        }
+    }
+}
+
+impl Primary {
+    pub fn new(span: Span, value: Value) -> Self {
+        Self { value, span }
+    }
+
+    pub fn from_token(token: &Token) -> Option<Self> {
+        use TokenKind as T;
+        use Value as V;
+
+        match &token.kind {
+            T::String(s) => Some(Self::new(token.span, V::String(s.clone()))),
+            T::Number(n) => Some(Self::new(token.span, V::Number(*n))),
+            T::True => Some(Self::new(token.span, V::Boolean(true))),
+            T::False => Some(Self::new(token.span, V::Boolean(false))),
+            T::Nil => Some(Self::new(token.span, V::Nil)),
+            _ => None,
+        }
+    }
+}
+
 impl Unary {
     pub fn new(span: Span, op: UnOp, expr: impl Into<Box<Expr>>) -> Self {
         Self {
@@ -157,7 +212,7 @@ impl Display for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Expr::*;
         match self {
-            Value(v) => write!(f, "{}", v),
+            Primary(p) => write!(f, "{}", p.value),
             Unary(u) => write!(f, "{}", u),
             Binary(b) => write!(f, "{}", b),
             Grouping(g) => write!(f, "{}", g),
