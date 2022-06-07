@@ -1,4 +1,4 @@
-use crate::ast::expr::{Binary, Expr, Grouping, Primary, UnOp, Unary};
+use crate::ast::expr::{Binary, Expr, Grouping, Literal, UnOp, Unary};
 use crate::ast::util::{AssocOp, Fixity};
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
@@ -73,7 +73,7 @@ impl<'a> Parser<'a> {
 
         match token.kind {
             String(_) | Number(_) | Nil | True | False => {
-                Ok(Expr::Primary(Primary::from_token(self.bump()).unwrap()))
+                Ok(Expr::Literal(Literal::from_token(self.bump()).unwrap()))
             }
             Minus | Bang => self.parse_unary(),
             LeftParen => self.parse_grouping(),
@@ -134,10 +134,10 @@ mod tests {
             Expr::Binary(Binary::new(
                 Span::new(0, 6),
                 BinOp::Divide,
-                Expr::Primary(Primary::new(Span::new(0, 2), Value::Number(15.0))),
-                Expr::Primary(Primary::new(Span::new(5, 6), Value::Number(5.0))),
+                Expr::Literal(Literal::new(Span::new(0, 2), Value::Number(15.0))),
+                Expr::Literal(Literal::new(Span::new(5, 6), Value::Number(5.0))),
             )),
-            Expr::Primary(Primary::new(Span::new(9, 10), Value::Number(3.0))),
+            Expr::Literal(Literal::new(Span::new(9, 10), Value::Number(3.0))),
         ));
 
         let mut parser = Parser::new(source);
@@ -152,12 +152,12 @@ mod tests {
         let expected = Expr::Binary(Binary::new(
             Span::new(0, 10),
             BinOp::Add,
-            Expr::Primary(Primary::new(Span::new(0, 2), Value::Number(15.0))),
+            Expr::Literal(Literal::new(Span::new(0, 2), Value::Number(15.0))),
             Expr::Binary(Binary::new(
                 Span::new(5, 10),
                 BinOp::Divide,
-                Expr::Primary(Primary::new(Span::new(5, 6), Value::Number(5.0))),
-                Expr::Primary(Primary::new(Span::new(9, 10), Value::Number(3.0))),
+                Expr::Literal(Literal::new(Span::new(5, 6), Value::Number(5.0))),
+                Expr::Literal(Literal::new(Span::new(9, 10), Value::Number(3.0))),
             )),
         ));
 
@@ -178,11 +178,11 @@ mod tests {
                 Expr::Binary(Binary::new(
                     Span::new(1, 7),
                     BinOp::Add,
-                    Expr::Primary(Primary::new(Span::new(1, 3), Value::Number(15.0))),
-                    Expr::Primary(Primary::new(Span::new(6, 7), Value::Number(5.0))),
+                    Expr::Literal(Literal::new(Span::new(1, 3), Value::Number(15.0))),
+                    Expr::Literal(Literal::new(Span::new(6, 7), Value::Number(5.0))),
                 )),
             )),
-            Expr::Primary(Primary::new(Span::new(11, 12), Value::Number(3.0))),
+            Expr::Literal(Literal::new(Span::new(11, 12), Value::Number(3.0))),
         ));
 
         let mut parser = Parser::new(source);
@@ -197,11 +197,11 @@ mod tests {
         let expected = Expr::Binary(Binary::new(
             Span::new(0, 7),
             BinOp::Add,
-            Expr::Primary(Primary::new(Span::new(0, 2), Value::Number(15.0))),
+            Expr::Literal(Literal::new(Span::new(0, 2), Value::Number(15.0))),
             Expr::Unary(Unary::new(
                 Span::new(5, 7),
                 UnOp::Minus,
-                Expr::Primary(Primary::new(Span::new(6, 7), Value::Number(5.0))),
+                Expr::Literal(Literal::new(Span::new(6, 7), Value::Number(5.0))),
             )),
         ));
 

@@ -37,7 +37,7 @@ pub enum BinOp {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Primary(Primary),
+    Literal(Literal),
     Unary(Unary),
     Binary(Binary),
     Grouping(Grouping),
@@ -52,7 +52,7 @@ pub enum Value {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Primary {
+pub struct Literal {
     span: Span,
     value: Value,
 }
@@ -83,7 +83,7 @@ impl Expr {
         use Expr::*;
 
         match self {
-            Primary(p) => p.span,
+            Literal(p) => p.span,
             Unary(u) => u.span,
             Binary(b) => b.span,
             Grouping(g) => g.span,
@@ -91,7 +91,7 @@ impl Expr {
     }
 }
 
-impl Primary {
+impl Literal {
     pub fn new(span: Span, value: Value) -> Self {
         Self { value, span }
     }
@@ -212,7 +212,7 @@ impl Display for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Expr::*;
         match self {
-            Primary(p) => write!(f, "{}", p.value),
+            Literal(p) => write!(f, "{}", p.value),
             Unary(u) => write!(f, "{}", u),
             Binary(b) => write!(f, "{}", b),
             Grouping(g) => write!(f, "{}", g),
