@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use crate::span::Span;
-use crate::token::ScanError;
+pub use crate::token::ScanError;
 
 pub type PResult<T> = Result<T, ParseError>;
 

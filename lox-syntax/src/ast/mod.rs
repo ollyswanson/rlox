@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::span::Span;
 
 pub mod expr;
-pub mod util;
+pub(crate) mod util;
 
 //  A unique id for the Identifiers is needed for the following case:
 //

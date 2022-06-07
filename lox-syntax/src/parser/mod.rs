@@ -1,13 +1,15 @@
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 use std::mem;
 
-use crate::parser::error::{PResult, ParseError};
-use crate::scanner::Scanner;
+use error::{PResult, ParseError};
+use scanner::Scanner;
+
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
 
-mod error;
+pub mod error;
 mod expr;
+mod scanner;
 
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
@@ -51,7 +53,14 @@ impl<'a> Parser<'a> {
                     self.diagnostics.push(ParseError::ScanError { error, span });
                 }
                 _ => {
-                    continue;
+                    if matches!(
+                        self.peek().kind,
+                        Class | For | Fun | If | Print | Return | Var | While
+                    ) {
+                        break;
+                    } else {
+                        continue;
+                    }
                 }
             }
         }

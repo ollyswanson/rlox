@@ -1,5 +1,6 @@
-mod ast;
-mod parser;
-mod scanner;
-mod span;
+pub use ast::Identifier;
+
+pub mod ast;
+pub mod parser;
+pub mod span;
 mod token;

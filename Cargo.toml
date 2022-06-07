@@ -2,5 +2,6 @@
 
 members = [
     "lox-syntax",
-    "lox"
+    "lox",
+    "tree-walk"
 ]
