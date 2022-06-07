@@ -4,12 +4,14 @@ use std::mem;
 use error::{PResult, ParseError};
 use scanner::Scanner;
 
+use crate::ast::stmt::Stmt;
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
 
 pub mod error;
 mod expr;
 mod scanner;
+mod stmt;
 
 pub struct Parser<'a> {
     scanner: Scanner<'a>,
@@ -31,6 +33,22 @@ impl<'a> Parser<'a> {
             prev_token: Token::new(TokenKind::Eof, Span::new(0, 0)),
             diagnostics: Vec::new(),
         }
+    }
+
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        let mut statements = Vec::new();
+
+        while !self.is_at_end() {
+            match self.parse_stmt() {
+                Ok(stmt) => statements.push(stmt),
+                Err(e) => {
+                    self.diagnostics.push(e);
+                    self.synchronize();
+                }
+            }
+        }
+
+        statements
     }
 
     pub fn bump(&mut self) -> &Token {
