@@ -20,16 +20,26 @@ pub(crate) mod util;
 // undeclared variable.
 static ID_SEQUENCE: AtomicUsize = AtomicUsize::new(0);
 
+#[derive(Debug, PartialEq)]
 pub struct Identifier {
-    id: usize,
-    name: String,
-    span: Span,
+    pub id: usize,
+    pub name: String,
+    pub span: Span,
 }
 
 impl Identifier {
-    pub fn new(name: impl Into<String>, span: Span) -> Self {
+    pub fn new(span: Span, name: impl Into<String>) -> Self {
         let id = ID_SEQUENCE.fetch_add(1, Ordering::SeqCst);
 
+        Self {
+            id,
+            name: name.into(),
+            span,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn new_test(span: Span, name: impl Into<String>, id: usize) -> Self {
         Self {
             id,
             name: name.into(),

@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
         let mut statements = Vec::new();
 
         while !self.is_at_end() {
-            match self.parse_stmt() {
+            match self.parse_declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
                     self.diagnostics.push(e);
