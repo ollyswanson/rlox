@@ -15,4 +15,8 @@ pub enum ParseError {
         span: Span,
         message: Cow<'static, str>,
     },
+    InvalidAssignment {
+        span: Span,
+        message: Cow<'static, str>,
+    },
 }

@@ -1,4 +1,6 @@
-use crate::ast::expr::{Binary, Expr, Grouping, Literal, UnOp, Unary, Var};
+use std::mem;
+
+use crate::ast::expr::{Assign, Binary, Expr, Grouping, Literal, UnOp, Unary, Var};
 use crate::ast::util::{AssocOp, Fixity};
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
@@ -59,7 +61,16 @@ impl<'a> Parser<'a> {
                 | AssocOp::Divide => {
                     Expr::Binary(Binary::new(span, op.to_bin_op().unwrap(), lhs, rhs))
                 }
-                _ => todo!(),
+                AssocOp::Assign => {
+                    if let Expr::Var(var) = lhs {
+                        Expr::Assign(Assign::new(var.span.union(&rhs.span()), var.id, rhs))
+                    } else {
+                        return Err(ParseError::InvalidAssignment {
+                            span: lhs.span(),
+                            message: format!("can't assign to {}", lhs).into(),
+                        });
+                    }
+                }
             };
         }
 
@@ -223,6 +234,25 @@ mod tests {
         let expected = Expr::Var(Var::new(
             Span::new(0, 10),
             Identifier::new_test(Span::new(0, 10), "a_variable", 0),
+        ));
+
+        let mut parser = Parser::new(source);
+        let expr = parser.parse_expr().unwrap();
+
+        assert_eq!(expected, expr);
+    }
+
+    #[test]
+    fn parses_assignment_right_associative() {
+        let source = "a = b = 5";
+        let expected = Expr::Assign(Assign::new(
+            Span::new(0, 9),
+            Identifier::new_test(Span::new(0, 1), "a", 0),
+            Expr::Assign(Assign::new(
+                Span::new(4, 9),
+                Identifier::new_test(Span::new(4, 5), "b", 1),
+                Expr::Literal(Literal::new(Span::new(8, 9), Value::Number(5.0))),
+            )),
         ));
 
         let mut parser = Parser::new(source);

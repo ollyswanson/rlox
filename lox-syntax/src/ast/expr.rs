@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
@@ -43,6 +43,7 @@ pub enum Expr {
     Unary(Unary),
     Binary(Binary),
     Grouping(Grouping),
+    Assign(Assign),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -86,6 +87,13 @@ pub struct Grouping {
     pub expr: Box<Expr>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Assign {
+    pub span: Span,
+    pub var: Identifier,
+    pub expr: Box<Expr>,
+}
+
 impl Expr {
     pub fn span(&self) -> Span {
         use Expr::*;
@@ -96,6 +104,7 @@ impl Expr {
             Binary(b) => b.span,
             Var(v) => v.span,
             Grouping(g) => g.span,
+            Assign(a) => a.span,
         }
     }
 }
@@ -161,6 +170,16 @@ impl Grouping {
     }
 }
 
+impl Assign {
+    pub fn new(span: Span, var: Identifier, expr: impl Into<Box<Expr>>) -> Self {
+        Self {
+            span,
+            var,
+            expr: expr.into(),
+        }
+    }
+}
+
 // impl Display
 
 impl Display for UnOp {
@@ -213,19 +232,25 @@ impl Display for Var {
 
 impl Display for Unary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({}{})", self.op, self.expr)
+        write!(f, "({}{})", &self.op, &self.expr)
     }
 }
 
 impl Display for Binary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({} {} {})", self.op, self.left, self.right)
+        write!(f, "({} {} {})", self.op, &self.left, &self.right)
     }
 }
 
 impl Display for Grouping {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({})", self.expr)
+        write!(f, "({})", &self.expr)
+    }
+}
+
+impl Display for Assign {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(assign {} {})", &self.var.name, &self.expr)
     }
 }
 
@@ -238,6 +263,7 @@ impl Display for Expr {
             Unary(u) => write!(f, "{}", u),
             Binary(b) => write!(f, "{}", b),
             Grouping(g) => write!(f, "{}", g),
+            Assign(a) => write!(f, "{}", a),
         }
     }
 }
