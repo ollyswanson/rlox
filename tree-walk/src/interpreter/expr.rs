@@ -13,6 +13,7 @@ impl Interpreter {
             Grouping(g) => self.evaluate_expr(&g.expr),
             Binary(b) => self.evaluate_binary_expression(b),
             Unary(u) => self.evaluate_unary_expression(u),
+            Assign(a) => self.evaluate_assign(a),
         }
     }
 
@@ -45,6 +46,12 @@ impl Interpreter {
                 message: format!("Illegal operation {} {} {}", l, op, r).into(),
             })),
         }
+    }
+
+    fn evaluate_assign(&mut self, assign: &Assign) -> RResult<RuntimeValue> {
+        let value = self.evaluate_expr(&assign.expr)?;
+        self.environment.define(&assign.var.name, value.clone());
+        Ok(value)
     }
 }
 

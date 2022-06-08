@@ -13,7 +13,7 @@ impl Interpreter {
         match stmt {
             Var(v) => self.execute_var_stmt(&v.id, &v.expr),
             Print(p) => self.execute_print(&p.expr),
-            _ => todo!(),
+            Expr(s) => self.execute_expr_statement(&s.expr),
         }
     }
 
@@ -28,6 +28,11 @@ impl Interpreter {
         // Should probably be replaced with something that passes value to a Printer rather
         // than printing to stdout directly
         println!("{}", value);
+        Ok(())
+    }
+
+    pub fn execute_expr_statement(&mut self, expr: &Expr) -> RResult<()> {
+        self.evaluate_expr(expr)?;
         Ok(())
     }
 }
