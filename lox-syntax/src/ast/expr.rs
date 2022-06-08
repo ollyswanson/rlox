@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter, Write};
 
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
+use crate::Identifier;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum UnOp {
@@ -38,6 +39,7 @@ pub enum BinOp {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Literal(Literal),
+    Var(Var),
     Unary(Unary),
     Binary(Binary),
     Grouping(Grouping),
@@ -55,6 +57,12 @@ pub enum Value {
 pub struct Literal {
     pub span: Span,
     pub value: Value,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Var {
+    pub span: Span,
+    pub id: Identifier,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -86,6 +94,7 @@ impl Expr {
             Literal(p) => p.span,
             Unary(u) => u.span,
             Binary(b) => b.span,
+            Var(v) => v.span,
             Grouping(g) => g.span,
         }
     }
@@ -108,6 +117,12 @@ impl Literal {
             T::Nil => Some(Self::new(token.span, V::Nil)),
             _ => None,
         }
+    }
+}
+
+impl Var {
+    pub fn new(span: Span, id: Identifier) -> Self {
+        Self { span, id }
     }
 }
 
@@ -190,6 +205,12 @@ impl Display for Value {
     }
 }
 
+impl Display for Var {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.id.name)
+    }
+}
+
 impl Display for Unary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}{})", self.op, self.expr)
@@ -213,6 +234,7 @@ impl Display for Expr {
         use Expr::*;
         match self {
             Literal(p) => write!(f, "{}", p.value),
+            Var(v) => write!(f, "{}", v.id.name),
             Unary(u) => write!(f, "{}", u),
             Binary(b) => write!(f, "{}", b),
             Grouping(g) => write!(f, "{}", g),

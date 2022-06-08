@@ -1,8 +1,9 @@
-use crate::ast::expr::{Binary, Expr, Grouping, Literal, UnOp, Unary};
+use crate::ast::expr::{Binary, Expr, Grouping, Literal, UnOp, Unary, Var};
 use crate::ast::util::{AssocOp, Fixity};
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
 use crate::token::TokenKind;
+use crate::Identifier;
 
 impl<'a> Parser<'a> {
     pub fn parse_expr(&mut self) -> PResult<Expr> {
@@ -66,18 +67,23 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_prefix(&mut self) -> PResult<Expr> {
-        use super::TokenKind::*;
+        use super::TokenKind as T;
 
         let token = self.peek();
         let span = token.span;
 
         match token.kind {
-            String(_) | Number(_) | Nil | True | False => {
+            T::String(_) | T::Number(_) | T::Nil | T::True | T::False => {
                 Ok(Expr::Literal(Literal::from_token(self.bump()).unwrap()))
             }
-            Minus | Bang => self.parse_unary(),
-            LeftParen => self.parse_grouping(),
-            Error(error) => Err(ParseError::ScanError { error, span }),
+            T::Identifier(ref name) => {
+                let name = name.clone();
+                self.bump();
+                Ok(Expr::Var(Var::new(span, Identifier::new(span, name))))
+            }
+            T::Minus | T::Bang => self.parse_unary(),
+            T::LeftParen => self.parse_grouping(),
+            T::Error(error) => Err(ParseError::ScanError { error, span }),
             _ => Err(ParseError::UnexpectedToken {
                 span,
                 message: format!("Unexpected token {}", token.kind).into(),
@@ -203,6 +209,20 @@ mod tests {
                 UnOp::Minus,
                 Expr::Literal(Literal::new(Span::new(6, 7), Value::Number(5.0))),
             )),
+        ));
+
+        let mut parser = Parser::new(source);
+        let expr = parser.parse_expr().unwrap();
+
+        assert_eq!(expected, expr);
+    }
+
+    #[test]
+    fn parses_var_expressions() {
+        let source = "a_variable";
+        let expected = Expr::Var(Var::new(
+            Span::new(0, 10),
+            Identifier::new_test(Span::new(0, 10), "a_variable", 0),
         ));
 
         let mut parser = Parser::new(source);

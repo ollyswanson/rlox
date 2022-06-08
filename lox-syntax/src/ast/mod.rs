@@ -20,7 +20,7 @@ pub(crate) mod util;
 // undeclared variable.
 static ID_SEQUENCE: AtomicUsize = AtomicUsize::new(0);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Identifier {
     pub id: usize,
     pub name: String,
