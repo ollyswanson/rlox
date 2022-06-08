@@ -13,7 +13,21 @@ mod expr;
 mod scanner;
 mod stmt;
 
+//  A unique id for the Identifiers is needed for the following case:
+//
+// var a = 1;
+// fun() {
+//   print a;
+//   var a = 2;
+//   print a;
+//
+// Without a unique id and just using the name, during resolution `a` would first be pointed at the
+// `a` in the global scope, and would then be pointed at the `a` in the function scope, such that
+// instead of `1` and `2` being printed to stdout, there would be an error due to printing an
+// undeclared variable.
+
 pub struct Parser<'a> {
+    variable_id: usize,
     scanner: Scanner<'a>,
     current_token: Token,
     prev_token: Token,
@@ -27,6 +41,7 @@ impl<'a> Parser<'a> {
         let current_token = scanner.next().unwrap();
 
         Self {
+            variable_id: 0,
             scanner,
             current_token,
             // Use EOF token as dummy to start the scanner
@@ -119,5 +134,10 @@ impl<'a> Parser<'a> {
                 span: self.peek().span,
             })
         }
+    }
+
+    pub fn increment(&mut self) -> usize {
+        let next_id = self.variable_id + 1;
+        std::mem::replace(&mut self.variable_id, next_id)
     }
 }

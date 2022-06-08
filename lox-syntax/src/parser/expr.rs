@@ -1,11 +1,9 @@
-use std::mem;
-
 use crate::ast::expr::{Assign, Binary, Expr, Grouping, Literal, UnOp, Unary, Var};
 use crate::ast::util::{AssocOp, Fixity};
+use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
 use crate::token::TokenKind;
-use crate::Identifier;
 
 impl<'a> Parser<'a> {
     pub fn parse_expr(&mut self) -> PResult<Expr> {
@@ -90,7 +88,10 @@ impl<'a> Parser<'a> {
             T::Identifier(ref name) => {
                 let name = name.clone();
                 self.bump();
-                Ok(Expr::Var(Var::new(span, Identifier::new(span, name))))
+                Ok(Expr::Var(Var::new(
+                    span,
+                    Identifier::new(span, name, self.increment()),
+                )))
             }
             T::Minus | T::Bang => self.parse_unary(),
             T::LeftParen => self.parse_grouping(),
@@ -233,7 +234,7 @@ mod tests {
         let source = "a_variable";
         let expected = Expr::Var(Var::new(
             Span::new(0, 10),
-            Identifier::new_test(Span::new(0, 10), "a_variable", 0),
+            Identifier::new(Span::new(0, 10), "a_variable", 0),
         ));
 
         let mut parser = Parser::new(source);
@@ -247,10 +248,10 @@ mod tests {
         let source = "a = b = 5";
         let expected = Expr::Assign(Assign::new(
             Span::new(0, 9),
-            Identifier::new_test(Span::new(0, 1), "a", 0),
+            Identifier::new(Span::new(0, 1), "a", 0),
             Expr::Assign(Assign::new(
                 Span::new(4, 9),
-                Identifier::new_test(Span::new(4, 5), "b", 1),
+                Identifier::new(Span::new(4, 5), "b", 1),
                 Expr::Literal(Literal::new(Span::new(8, 9), Value::Number(5.0))),
             )),
         ));

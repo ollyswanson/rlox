@@ -72,10 +72,11 @@ impl<'a> Parser<'a> {
     }
 
     fn expect_identifier(&mut self) -> PResult<Identifier> {
+        let id = self.increment();
         let token = self.bump();
 
         match &token.kind {
-            TokenKind::Identifier(i) => Ok(Identifier::new(token.span, i)),
+            TokenKind::Identifier(i) => Ok(Identifier::new(token.span, i, id)),
             _ => Err(ParseError::UnexpectedToken {
                 message: format!("Expected identifier found {}", token.kind).into(),
                 span: token.span,
@@ -120,7 +121,7 @@ mod tests {
 
         let expected = Stmt::Var(Var::new(
             Span::new(0, 10),
-            Identifier::new_test(Span::new(4, 5), "a", 0),
+            Identifier::new(Span::new(4, 5), "a", 0),
             Expr::Literal(Literal::new(Span::new(8, 9), Value::Number(5.0))),
         ));
 
