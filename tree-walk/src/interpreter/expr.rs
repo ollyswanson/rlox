@@ -9,6 +9,7 @@ impl Interpreter {
         use Expr::*;
         match expr {
             Literal(literal) => Ok(RuntimeValue::from(&literal.value)),
+            Var(v) => self.environment.get(&v.id.name),
             Grouping(g) => self.evaluate_expr(&g.expr),
             Binary(b) => self.evaluate_binary_expression(b),
             Unary(u) => self.evaluate_unary_expression(u),

@@ -1,5 +1,6 @@
 use lox_syntax::ast::expr::Expr;
 use lox_syntax::ast::stmt::Stmt;
+use lox_syntax::Identifier;
 
 use crate::interpreter::error::RResult;
 
@@ -10,9 +11,16 @@ impl Interpreter {
         use Stmt::*;
 
         match stmt {
+            Var(v) => self.execute_var_stmt(&v.id, &v.expr),
             Print(p) => self.execute_print(&p.expr),
             _ => todo!(),
         }
+    }
+
+    pub fn execute_var_stmt(&mut self, id: &Identifier, expr: &Expr) -> RResult<()> {
+        let value = self.evaluate_expr(expr)?;
+        self.environment.define(&id.name, value);
+        Ok(())
     }
 
     pub fn execute_print(&mut self, expr: &Expr) -> RResult<()> {

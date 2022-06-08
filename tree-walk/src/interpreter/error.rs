@@ -8,10 +8,16 @@ pub type RResult<T> = Result<T, RuntimeError>;
 pub enum RuntimeError {
     TypeError(TypeError),
     DivisionByZero,
+    Undefined(Undefined),
 }
 
 #[derive(Debug)]
 pub struct TypeError {
+    pub(crate) message: Cow<'static, str>,
+}
+
+#[derive(Debug)]
+pub struct Undefined {
     pub(crate) message: Cow<'static, str>,
 }
 

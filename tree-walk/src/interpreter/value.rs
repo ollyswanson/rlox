@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use lox_syntax::ast::expr::Value;
 
+#[derive(Debug, Clone)]
 pub enum RuntimeValue {
     Nil,
     String(String),
