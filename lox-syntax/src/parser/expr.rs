@@ -1,4 +1,4 @@
-use crate::ast::expr::{Assign, Binary, Expr, Grouping, Literal, UnOp, Unary, Var};
+use crate::ast::expr::{Assign, Binary, Expr, Grouping, Literal, Logical, UnOp, Unary, Var};
 use crate::ast::util::{AssocOp, Fixity};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
@@ -69,6 +69,9 @@ impl<'a> Parser<'a> {
                         });
                     }
                 }
+                AssocOp::And | AssocOp::Or => {
+                    Expr::Logical(Logical::new(span, op.to_logical_op().unwrap(), lhs, rhs))
+                }
             };
         }
 
@@ -138,7 +141,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::expr::{BinOp, Value};
+    use crate::ast::expr::{BinOp, Logical, LogicalOp, Value, Var};
     use crate::span::Span;
 
     use super::*;
@@ -253,6 +256,44 @@ mod tests {
                 Span::new(4, 9),
                 Identifier::new(Span::new(4, 5), "b", 1),
                 Expr::Literal(Literal::new(Span::new(8, 9), Value::Number(5.0))),
+            )),
+        ));
+
+        let mut parser = Parser::new(source);
+        let expr = parser.parse_expr().unwrap();
+
+        assert_eq!(expected, expr);
+    }
+
+    #[test]
+    fn parses_logical_expressions() {
+        let source = "a or b and c and d";
+        let expected = Expr::Logical(Logical::new(
+            Span::new(0, 18),
+            LogicalOp::Or,
+            Expr::Var(Var::new(
+                Span::new(0, 1),
+                Identifier::new(Span::new(0, 1), "a", 0),
+            )),
+            Expr::Logical(Logical::new(
+                Span::new(5, 18),
+                LogicalOp::And,
+                Expr::Logical(Logical::new(
+                    Span::new(5, 12),
+                    LogicalOp::And,
+                    Expr::Var(Var::new(
+                        Span::new(5, 6),
+                        Identifier::new(Span::new(5, 6), "b", 1),
+                    )),
+                    Expr::Var(Var::new(
+                        Span::new(11, 12),
+                        Identifier::new(Span::new(11, 12), "c", 2),
+                    )),
+                )),
+                Expr::Var(Var::new(
+                    Span::new(17, 18),
+                    Identifier::new(Span::new(17, 18), "d", 3),
+                )),
             )),
         ));
 

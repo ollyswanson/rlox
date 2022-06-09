@@ -36,8 +36,8 @@ impl Interpreter {
         use BinOp::*;
         use RuntimeValue::*;
 
-        let lvalue = self.evaluate_expr(&binary.left)?;
-        let rvalue = self.evaluate_expr(&binary.right)?;
+        let lvalue = self.evaluate_expr(&binary.lhs)?;
+        let rvalue = self.evaluate_expr(&binary.rhs)?;
 
         match (lvalue, rvalue, binary.op) {
             (Number(l), Number(r), op) => evaluate_arithmetic_expression(l, r, op),

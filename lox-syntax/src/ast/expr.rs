@@ -36,12 +36,19 @@ pub enum BinOp {
     NotEqual,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum LogicalOp {
+    And,
+    Or,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Literal(Literal),
     Var(Var),
     Unary(Unary),
     Binary(Binary),
+    Logical(Logical),
     Grouping(Grouping),
     Assign(Assign),
 }
@@ -77,8 +84,16 @@ pub struct Unary {
 pub struct Binary {
     pub span: Span,
     pub op: BinOp,
-    pub left: Box<Expr>,
-    pub right: Box<Expr>,
+    pub lhs: Box<Expr>,
+    pub rhs: Box<Expr>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Logical {
+    pub span: Span,
+    pub op: LogicalOp,
+    pub lhs: Box<Expr>,
+    pub rhs: Box<Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -105,6 +120,7 @@ impl Expr {
             Var(v) => v.span,
             Grouping(g) => g.span,
             Assign(a) => a.span,
+            Logical(l) => l.span,
         }
     }
 }
@@ -149,14 +165,30 @@ impl Binary {
     pub fn new(
         span: Span,
         op: BinOp,
-        left: impl Into<Box<Expr>>,
-        right: impl Into<Box<Expr>>,
+        lhs: impl Into<Box<Expr>>,
+        rhs: impl Into<Box<Expr>>,
     ) -> Self {
         Self {
             span,
             op,
-            left: left.into(),
-            right: right.into(),
+            lhs: lhs.into(),
+            rhs: rhs.into(),
+        }
+    }
+}
+
+impl Logical {
+    pub fn new(
+        span: Span,
+        op: LogicalOp,
+        lhs: impl Into<Box<Expr>>,
+        rhs: impl Into<Box<Expr>>,
+    ) -> Self {
+        Self {
+            span,
+            op,
+            lhs: lhs.into(),
+            rhs: rhs.into(),
         }
     }
 }
@@ -211,6 +243,17 @@ impl Display for BinOp {
     }
 }
 
+impl Display for LogicalOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use LogicalOp::*;
+
+        match self {
+            And => f.write_str("and"),
+            Or => f.write_str("or"),
+        }
+    }
+}
+
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Value::*;
@@ -238,7 +281,13 @@ impl Display for Unary {
 
 impl Display for Binary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({} {} {})", self.op, &self.left, &self.right)
+        write!(f, "({} {} {})", self.op, &self.lhs, &self.rhs)
+    }
+}
+
+impl Display for Logical {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} {} {})", self.op, self.lhs, self.rhs)
     }
 }
 
@@ -262,6 +311,7 @@ impl Display for Expr {
             Var(v) => write!(f, "{}", v.id.name),
             Unary(u) => write!(f, "{}", u),
             Binary(b) => write!(f, "{}", b),
+            Logical(l) => write!(f, "{}", l),
             Grouping(g) => write!(f, "{}", g),
             Assign(a) => write!(f, "{}", a),
         }
