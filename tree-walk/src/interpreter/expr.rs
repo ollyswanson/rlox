@@ -12,6 +12,7 @@ impl Interpreter {
             Var(v) => self.environment.get(&v.id.name),
             Grouping(g) => self.evaluate_expr(&g.expr),
             Binary(b) => self.evaluate_binary_expression(b),
+            Logical(l) => self.evaluate_logical_expression(l),
             Unary(u) => self.evaluate_unary_expression(u),
             Assign(a) => self.evaluate_assign(a),
         }
@@ -45,6 +46,18 @@ impl Interpreter {
             (l, r, op) => Err(RuntimeError::TypeError(TypeError {
                 message: format!("Illegal operation {} {} {}", l, op, r).into(),
             })),
+        }
+    }
+
+    fn evaluate_logical_expression(&mut self, logical: &Logical) -> RResult<RuntimeValue> {
+        use LogicalOp::*;
+
+        let lhs = self.evaluate_expr(&logical.lhs)?;
+
+        match (lhs.is_truthy(), logical.op) {
+            (true, Or) => Ok(lhs),
+            (false, And) => Ok(lhs),
+            _ => self.evaluate_expr(&logical.rhs),
         }
     }
 
