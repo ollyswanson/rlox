@@ -3,6 +3,7 @@ use crate::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var, While};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
+use crate::span::Span;
 use crate::token::{Token, TokenKind};
 
 static TERMINATOR: &str = "missing semicolon ';'";
@@ -48,6 +49,7 @@ impl<'a> Parser<'a> {
             LeftBrace => self.parse_block(),
             If => self.parse_if(),
             While => self.parse_while(),
+            For => self.parse_for(),
             _ => self.parse_expr_stmt(),
         }
     }
@@ -106,6 +108,60 @@ impl<'a> Parser<'a> {
             stmt,
         )))
     }
+    fn parse_for(&mut self) -> PResult<Stmt> {
+        let span_start = self.bump().span;
+        self.expect(TokenKind::LeftParen, "expect '(' after 'for'".into())?;
+
+        let initializer = self
+            .match_and_or(&[TokenKind::Semicolon], None, |this| {
+                match this.peek().kind {
+                    TokenKind::Var => Some(this.parse_var_declaration()),
+                    _ => Some(this.parse_expr_stmt()),
+                }
+            })
+            .transpose()?;
+
+        let condition = self
+            .peek_and_or(&[TokenKind::Semicolon], None, |this| {
+                Some(this.parse_expr())
+            })
+            .transpose()?
+            .unwrap_or_else(|| Expr::Literal(Literal::new(self.peek().span, Value::Boolean(true))));
+
+        self.expect(
+            TokenKind::Semicolon,
+            "expect ';' after loop condition".into(),
+        )?;
+
+        let increment = self
+            .peek_and_or(&[TokenKind::RightParen], None, |this| {
+                Some(this.parse_expr())
+            })
+            .transpose()?;
+
+        self.expect(
+            TokenKind::RightParen,
+            "expect ')' after 'for' increment".into(),
+        )?;
+
+        let mut stmt = self.parse_stmt()?;
+        let span = span_start.union(&stmt.span());
+
+        if let Some(increment) = increment {
+            stmt = Stmt::Block(Block::new(
+                span,
+                vec![stmt, Stmt::Expr(ExprStmt::new(increment.span(), increment))],
+            ))
+        }
+
+        stmt = Stmt::While(While::new(span, condition, stmt));
+
+        if let Some(initializer) = initializer {
+            stmt = Stmt::Block(Block::new(span, vec![initializer, stmt]));
+        }
+
+        Ok(stmt)
+    }
 
     fn parse_print(&mut self) -> PResult<Stmt> {
         let start = self.bump().span;
@@ -146,7 +202,7 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::expr;
-    use crate::ast::expr::{Expr, Literal, Value};
+    use crate::ast::expr::{BinOp, Binary, Expr, Literal, Value};
     use crate::span::Span;
 
     use super::*;

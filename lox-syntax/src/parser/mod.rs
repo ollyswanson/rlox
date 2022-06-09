@@ -125,6 +125,31 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn match_and_or<T, F>(&mut self, kinds: &[TokenKind], and: T, or: F) -> T
+    where
+        F: FnOnce(&mut Self) -> T,
+    {
+        if self.matches(kinds).is_some() {
+            and
+        } else {
+            or(self)
+        }
+    }
+
+    pub fn peek_and_or<T, F>(&mut self, kinds: &[TokenKind], and: T, or: F) -> T
+    where
+        F: FnOnce(&mut Self) -> T,
+    {
+        if kinds
+            .iter()
+            .any(|kind| kind.match_kind(&self.current_token.kind))
+        {
+            and
+        } else {
+            or(self)
+        }
+    }
+
     pub fn expect(&mut self, expected: TokenKind, message: Cow<'static, str>) -> PResult<&Token> {
         if self.peek().kind.match_kind(&expected) {
             Ok(self.bump())
