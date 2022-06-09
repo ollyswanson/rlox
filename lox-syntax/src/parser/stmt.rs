@@ -1,5 +1,5 @@
 use crate::ast::expr::{Expr, Literal, Value};
-use crate::ast::stmt::{Block, ExprStmt, Print, Stmt, Var};
+use crate::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
@@ -46,6 +46,7 @@ impl<'a> Parser<'a> {
         match token.kind {
             Print => self.parse_print(),
             LeftBrace => self.parse_block(),
+            If => self.parse_if(),
             _ => self.parse_expr_stmt(),
         }
     }
@@ -64,6 +65,28 @@ impl<'a> Parser<'a> {
             left_brace_span.union(&right_brace.span),
             stmts,
         )))
+    }
+
+    fn parse_if(&mut self) -> PResult<Stmt> {
+        let if_span = self.bump().span;
+
+        self.expect(TokenKind::LeftParen, "expect '(' after 'if'".into())?;
+        let condition = self.parse_expr()?;
+        self.expect(
+            TokenKind::RightParen,
+            "expect ')' after 'if' condition".into(),
+        )?;
+
+        let then_stmt = self.parse_stmt()?;
+
+        let (span, else_stmt) = if self.matches(&[TokenKind::Else]).is_some() {
+            let else_stmt = self.parse_stmt()?;
+            (if_span.union(&else_stmt.span()), Some(else_stmt))
+        } else {
+            (if_span.union(&then_stmt.span()), None)
+        };
+
+        Ok(Stmt::If(If::new(span, condition, then_stmt, else_stmt)))
     }
 
     fn parse_print(&mut self) -> PResult<Stmt> {
@@ -173,6 +196,33 @@ mod tests {
                     ))],
                 )),
             ],
+        ));
+
+        let mut parser = Parser::new(source);
+        let stmt = parser.parse_declaration().unwrap();
+
+        assert_eq!(expected, stmt);
+    }
+
+    #[test]
+    fn parse_if_stmt() {
+        let source = "if (true) if (true) print 5; else print 6;";
+        let expected = Stmt::If(If::new(
+            Span::new(0, 42),
+            Expr::Literal(Literal::new(Span::new(4, 8), Value::Boolean(true))),
+            Stmt::If(If::new(
+                Span::new(10, 42),
+                Expr::Literal(Literal::new(Span::new(14, 18), Value::Boolean(true))),
+                Stmt::Print(Print::new(
+                    Span::new(20, 28),
+                    Expr::Literal(Literal::new(Span::new(26, 27), Value::Number(5.0))),
+                )),
+                Some(Stmt::Print(Print::new(
+                    Span::new(34, 42),
+                    Expr::Literal(Literal::new(Span::new(40, 41), Value::Number(6.0))),
+                ))),
+            )),
+            None as Option<Stmt>,
         ));
 
         let mut parser = Parser::new(source);

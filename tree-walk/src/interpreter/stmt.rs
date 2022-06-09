@@ -15,6 +15,7 @@ impl Interpreter {
             Print(p) => self.execute_print(&p.expr),
             Expr(s) => self.execute_expr_statement(&s.expr),
             Block(b) => self.execute_block_stmt(&b.stmts),
+            If(i) => todo!(),
         }
     }
 

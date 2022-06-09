@@ -10,6 +10,7 @@ pub enum Stmt {
     Expr(ExprStmt),
     Var(Var),
     Block(Block),
+    If(If),
 }
 
 #[derive(Debug, PartialEq)]
@@ -37,6 +38,26 @@ pub struct Block {
     pub stmts: Vec<Stmt>,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct If {
+    pub span: Span,
+    pub cond: Expr,
+    pub then_stmt: Box<Stmt>,
+    pub else_stmt: Option<Box<Stmt>>,
+}
+
+impl Stmt {
+    pub fn span(&self) -> Span {
+        match self {
+            Stmt::Print(p) => p.span,
+            Stmt::Expr(e) => e.span,
+            Stmt::Var(v) => v.span,
+            Stmt::Block(b) => b.span,
+            Stmt::If(i) => i.span,
+        }
+    }
+}
+
 impl Var {
     pub fn new(span: Span, id: Identifier, expr: Expr) -> Self {
         Self { span, id, expr }
@@ -61,42 +82,18 @@ impl Block {
     }
 }
 
-impl Display for Stmt {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        use Stmt::*;
-        match self {
-            Var(v) => write!(f, "{}", v),
-            Print(p) => write!(f, "{}", p),
-            Expr(e) => write!(f, "{}", e),
-            Block(b) => write!(f, "{}", b),
+impl If {
+    pub fn new(
+        span: Span,
+        cond: Expr,
+        then_stmt: impl Into<Box<Stmt>>,
+        else_stmt: Option<impl Into<Box<Stmt>>>,
+    ) -> Self {
+        Self {
+            span,
+            cond,
+            then_stmt: then_stmt.into(),
+            else_stmt: else_stmt.map(|s| s.into()),
         }
-    }
-}
-
-impl Display for Var {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.id.name)
-    }
-}
-
-impl Display for Print {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "print {};", self.expr)
-    }
-}
-
-impl Display for ExprStmt {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{};", self.expr)
-    }
-}
-
-impl Display for Block {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("{")?;
-        for stmt in self.stmts.iter() {
-            write!(f, "{}", stmt)?;
-        }
-        f.write_str("}")
     }
 }
