@@ -34,12 +34,15 @@ impl Environment {
         self.inner.insert(name.into(), value);
     }
 
-    // For primitive types we will choose to clone them and pass owned copies back to the caller
-    // for more complex types we will use reference counted smart pointers to hand an owned copy of
-    // the pointer back to the caller.
-    pub fn get(&self, name: &str) -> RResult<RuntimeValue> {
+    pub fn assign(&mut self, name: &str, value: RuntimeValue) -> RResult<RuntimeValue> {
+        let current_value = self.get_mut(name)?;
+        *current_value = value;
+        Ok(current_value.clone())
+    }
+
+    pub fn get_ref(&self, name: &str) -> RResult<&RuntimeValue> {
         match &self.enclosing {
-            None => self.inner.get(name).cloned().ok_or_else(|| {
+            None => self.inner.get(name).ok_or_else(|| {
                 RuntimeError::Undefined(Undefined {
                     message: format!("undefined variable {}", name).into(),
                 })
@@ -47,9 +50,30 @@ impl Environment {
             Some(enclosing) => self
                 .inner
                 .get(name)
-                .cloned()
                 .map(Ok)
-                .unwrap_or_else(|| enclosing.get(name)),
+                .unwrap_or_else(|| enclosing.get_ref(name)),
         }
+    }
+
+    pub fn get_mut(&mut self, name: &str) -> RResult<&mut RuntimeValue> {
+        match &mut self.enclosing {
+            None => self.inner.get_mut(name).ok_or_else(|| {
+                RuntimeError::Undefined(Undefined {
+                    message: format!("undefined variable {}", name).into(),
+                })
+            }),
+            Some(enclosing) => self
+                .inner
+                .get_mut(name)
+                .map(Ok)
+                .unwrap_or_else(|| enclosing.get_mut(name)),
+        }
+    }
+
+    // For primitive types we will choose to clone them and pass owned copies back to the caller
+    // for more complex types we will use reference counted smart pointers to hand an owned copy of
+    // the pointer back to the caller.
+    pub fn get(&self, name: &str) -> RResult<RuntimeValue> {
+        self.get_ref(name).map(|value| value.clone())
     }
 }

@@ -1,4 +1,4 @@
-use lox_syntax::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var};
+use lox_syntax::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var, While};
 
 use crate::interpreter::error::RResult;
 
@@ -10,10 +10,11 @@ impl Interpreter {
 
         match stmt {
             Var(v) => self.execute_var_stmt(v),
-            Print(p) => self.execute_print(p),
-            Expr(s) => self.execute_expr_statement(s),
+            Print(p) => self.execute_print_stmt(p),
+            Expr(s) => self.execute_expr_stmt(s),
             Block(b) => self.execute_block_stmt(b),
             If(i) => self.execute_if_stmt(i),
+            While(w) => self.execute_while_stmt(w),
         }
     }
 
@@ -38,13 +39,21 @@ impl Interpreter {
         }
     }
 
+    fn execute_while_stmt(&mut self, while_stmt: &While) -> RResult<()> {
+        while self.evaluate_expr(&while_stmt.cond)?.is_truthy() {
+            self.execute_stmt(&while_stmt.stmt)?;
+        }
+
+        Ok(())
+    }
+
     fn execute_var_stmt(&mut self, var: &Var) -> RResult<()> {
         let value = self.evaluate_expr(&var.expr)?;
         self.environment.define(&var.id.name, value);
         Ok(())
     }
 
-    fn execute_print(&mut self, print: &Print) -> RResult<()> {
+    fn execute_print_stmt(&mut self, print: &Print) -> RResult<()> {
         let value = self.evaluate_expr(&print.expr)?;
         // Should probably be replaced with something that passes value to a Printer rather
         // than printing to stdout directly
@@ -52,7 +61,7 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute_expr_statement(&mut self, expr_stmt: &ExprStmt) -> RResult<()> {
+    fn execute_expr_stmt(&mut self, expr_stmt: &ExprStmt) -> RResult<()> {
         self.evaluate_expr(&expr_stmt.expr)?;
         Ok(())
     }

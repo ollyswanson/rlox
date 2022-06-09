@@ -63,8 +63,7 @@ impl Interpreter {
 
     fn evaluate_assign(&mut self, assign: &Assign) -> RResult<RuntimeValue> {
         let value = self.evaluate_expr(&assign.expr)?;
-        self.environment.define(&assign.var.name, value.clone());
-        Ok(value)
+        self.environment.assign(&assign.var.name, value)
     }
 }
 
