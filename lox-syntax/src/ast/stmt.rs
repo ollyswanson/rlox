@@ -9,6 +9,7 @@ pub enum Stmt {
     Print(Print),
     Expr(ExprStmt),
     Var(Var),
+    Block(Block),
 }
 
 #[derive(Debug, PartialEq)]
@@ -30,6 +31,12 @@ pub struct ExprStmt {
     pub expr: Expr,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Block {
+    pub span: Span,
+    pub stmts: Vec<Stmt>,
+}
+
 impl Var {
     pub fn new(span: Span, id: Identifier, expr: Expr) -> Self {
         Self { span, id, expr }
@@ -48,6 +55,12 @@ impl ExprStmt {
     }
 }
 
+impl Block {
+    pub fn new(span: Span, stmts: Vec<Stmt>) -> Self {
+        Self { span, stmts }
+    }
+}
+
 impl Display for Stmt {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Stmt::*;
@@ -55,6 +68,7 @@ impl Display for Stmt {
             Var(v) => write!(f, "{}", v),
             Print(p) => write!(f, "{}", p),
             Expr(e) => write!(f, "{}", e),
+            Block(b) => write!(f, "{}", b),
         }
     }
 }
@@ -74,5 +88,15 @@ impl Display for Print {
 impl Display for ExprStmt {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{};", self.expr)
+    }
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("{")?;
+        for stmt in self.stmts.iter() {
+            write!(f, "{}", stmt)?;
+        }
+        f.write_str("}")
     }
 }

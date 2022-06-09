@@ -1,5 +1,5 @@
 use crate::ast::expr::{Expr, Literal, Value};
-use crate::ast::stmt::{ExprStmt, Print, Stmt, Var};
+use crate::ast::stmt::{Block, ExprStmt, Print, Stmt, Var};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
@@ -44,12 +44,29 @@ impl<'a> Parser<'a> {
 
         let token = self.peek();
         match token.kind {
-            Print => self.print(),
-            _ => self.expr_stmt(),
+            Print => self.parse_print(),
+            LeftBrace => self.parse_block(),
+            _ => self.parse_expr_stmt(),
         }
     }
 
-    fn print(&mut self) -> PResult<Stmt> {
+    fn parse_block(&mut self) -> PResult<Stmt> {
+        let mut stmts: Vec<Stmt> = Vec::new();
+        let left_brace_span = self.bump().span;
+
+        while !self.peek().kind.match_kind(&TokenKind::RightBrace) && !self.is_at_end() {
+            stmts.push(self.parse_declaration()?);
+        }
+
+        let right_brace = self.expect(TokenKind::RightBrace, "did not find matching }".into())?;
+
+        Ok(Stmt::Block(Block::new(
+            left_brace_span.union(&right_brace.span),
+            stmts,
+        )))
+    }
+
+    fn parse_print(&mut self) -> PResult<Stmt> {
         let start = self.bump().span;
 
         let expr = self.parse_expr()?;
@@ -59,7 +76,7 @@ impl<'a> Parser<'a> {
         Ok(Stmt::Print(Print::new(span, expr)))
     }
 
-    fn expr_stmt(&mut self) -> PResult<Stmt> {
+    fn parse_expr_stmt(&mut self) -> PResult<Stmt> {
         let expr = self.parse_expr()?;
         let semicolon = self.expect_semicolon()?;
         let span = expr.span().union(&semicolon.span);
@@ -87,6 +104,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::ast::expr;
     use crate::ast::expr::{Expr, Literal, Value};
     use crate::span::Span;
 
@@ -123,6 +141,38 @@ mod tests {
             Span::new(0, 10),
             Identifier::new(Span::new(4, 5), "a", 0),
             Expr::Literal(Literal::new(Span::new(8, 9), Value::Number(5.0))),
+        ));
+
+        let mut parser = Parser::new(source);
+        let stmt = parser.parse_declaration().unwrap();
+
+        assert_eq!(expected, stmt);
+    }
+
+    #[test]
+    fn parse_block_stmt() {
+        let source = "{ a; { b; }}";
+        let expected = Stmt::Block(Block::new(
+            Span::new(0, 12),
+            vec![
+                Stmt::Expr(ExprStmt::new(
+                    Span::new(2, 4),
+                    Expr::Var(expr::Var::new(
+                        Span::new(2, 3),
+                        Identifier::new(Span::new(2, 3), "a", 0),
+                    )),
+                )),
+                Stmt::Block(Block::new(
+                    Span::new(5, 11),
+                    vec![Stmt::Expr(ExprStmt::new(
+                        Span::new(7, 9),
+                        Expr::Var(expr::Var::new(
+                            Span::new(7, 8),
+                            Identifier::new(Span::new(7, 8), "b", 1),
+                        )),
+                    ))],
+                )),
+            ],
         ));
 
         let mut parser = Parser::new(source);
