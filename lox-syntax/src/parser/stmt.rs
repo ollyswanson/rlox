@@ -1,5 +1,5 @@
 use crate::ast::expr::{Expr, Literal, Value};
-use crate::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var};
+use crate::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var, While};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
@@ -47,6 +47,7 @@ impl<'a> Parser<'a> {
             Print => self.parse_print(),
             LeftBrace => self.parse_block(),
             If => self.parse_if(),
+            While => self.parse_while(),
             _ => self.parse_expr_stmt(),
         }
     }
@@ -87,6 +88,23 @@ impl<'a> Parser<'a> {
         };
 
         Ok(Stmt::If(If::new(span, condition, then_stmt, else_stmt)))
+    }
+
+    fn parse_while(&mut self) -> PResult<Stmt> {
+        let span_start = self.bump().span;
+        self.expect(TokenKind::LeftParen, "expect '(' after 'while'".into())?;
+        let cond = self.parse_expr()?;
+        self.expect(
+            TokenKind::RightParen,
+            "expect ')' after 'while' condition".into(),
+        )?;
+        let stmt = self.parse_stmt()?;
+
+        Ok(Stmt::While(While::new(
+            span_start.union(&stmt.span()),
+            cond,
+            stmt,
+        )))
     }
 
     fn parse_print(&mut self) -> PResult<Stmt> {
@@ -223,6 +241,24 @@ mod tests {
                 ))),
             )),
             None as Option<Stmt>,
+        ));
+
+        let mut parser = Parser::new(source);
+        let stmt = parser.parse_declaration().unwrap();
+
+        assert_eq!(expected, stmt);
+    }
+
+    #[test]
+    fn parse_while() {
+        let source = "while (true) print 1;";
+        let expected = Stmt::While(While::new(
+            Span::new(0, 21),
+            Expr::Literal(Literal::new(Span::new(7, 11), Value::Boolean(true))),
+            Stmt::Print(Print::new(
+                Span::new(13, 21),
+                Expr::Literal(Literal::new(Span::new(19, 20), Value::Number(1.0))),
+            )),
         ));
 
         let mut parser = Parser::new(source);

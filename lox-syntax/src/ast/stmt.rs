@@ -11,6 +11,7 @@ pub enum Stmt {
     Var(Var),
     Block(Block),
     If(If),
+    While(While),
 }
 
 #[derive(Debug, PartialEq)]
@@ -46,6 +47,13 @@ pub struct If {
     pub else_stmt: Option<Box<Stmt>>,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct While {
+    pub span: Span,
+    pub cond: Expr,
+    pub stmt: Box<Stmt>,
+}
+
 impl Stmt {
     pub fn span(&self) -> Span {
         match self {
@@ -54,6 +62,7 @@ impl Stmt {
             Stmt::Var(v) => v.span,
             Stmt::Block(b) => b.span,
             Stmt::If(i) => i.span,
+            Stmt::While(w) => w.span,
         }
     }
 }
@@ -94,6 +103,16 @@ impl If {
             cond,
             then_stmt: then_stmt.into(),
             else_stmt: else_stmt.map(|s| s.into()),
+        }
+    }
+}
+
+impl While {
+    pub fn new(span: Span, cond: Expr, stmt: impl Into<Box<Stmt>>) -> Self {
+        Self {
+            span,
+            cond,
+            stmt: stmt.into(),
         }
     }
 }
