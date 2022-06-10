@@ -1,6 +1,12 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
+use std::rc::Rc;
 
 use lox_syntax::ast::expr::Value;
+
+use crate::interpreter::error::RResult;
+use crate::Interpreter;
+
+pub mod function;
 
 #[derive(Debug, Clone)]
 pub enum RuntimeValue {
@@ -8,6 +14,7 @@ pub enum RuntimeValue {
     String(String),
     Number(f64),
     Boolean(bool),
+    Function(Rc<dyn Callable>),
 }
 
 impl RuntimeValue {
@@ -41,6 +48,13 @@ impl Display for RuntimeValue {
             String(s) => write!(f, "\"{}\"", s),
             Number(n) => write!(f, "{}", n),
             Boolean(b) => write!(f, "{}", b),
+            Function(_) => f.write_str("Function"),
         }
     }
+}
+
+pub trait Callable: Debug {
+    fn arity(&self) -> usize;
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<RuntimeValue>)
+        -> RResult<RuntimeValue>;
 }

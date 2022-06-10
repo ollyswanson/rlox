@@ -1,7 +1,10 @@
-use lox_syntax::ast::stmt::Stmt;
+use std::rc::Rc;
 
-use crate::interpreter::environment::Environment;
-use crate::interpreter::error::RResult;
+use environment::Environment;
+use error::RResult;
+use lox_syntax::ast::stmt::Stmt;
+use value::function::Clock;
+use value::RuntimeValue;
 
 mod environment;
 mod error;
@@ -12,13 +15,12 @@ mod value;
 #[derive(Debug)]
 pub struct Interpreter {
     environment: Environment,
+    globals: Environment,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self {
-            environment: Environment::new(),
-        }
+        Default::default()
     }
 
     pub fn interpret(&mut self, statements: &[Stmt]) -> RResult<()> {
@@ -27,5 +29,18 @@ impl Interpreter {
         }
 
         Ok(())
+    }
+}
+
+impl Default for Interpreter {
+    fn default() -> Self {
+        let mut globals = Environment::new();
+        let environment = globals.clone();
+        globals.define("clock", RuntimeValue::Function(Rc::new(Clock {})));
+
+        Self {
+            environment,
+            globals,
+        }
     }
 }

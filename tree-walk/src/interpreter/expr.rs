@@ -15,6 +15,7 @@ impl Interpreter {
             Logical(l) => self.evaluate_logical_expression(l),
             Unary(u) => self.evaluate_unary_expression(u),
             Assign(a) => self.evaluate_assign(a),
+            Call(c) => self.evaluate_call(c),
         }
     }
 
@@ -64,6 +65,34 @@ impl Interpreter {
     fn evaluate_assign(&mut self, assign: &Assign) -> RResult<RuntimeValue> {
         let value = self.evaluate_expr(&assign.expr)?;
         self.environment.assign(&assign.var.name, value)
+    }
+
+    fn evaluate_call(&mut self, call: &Call) -> RResult<RuntimeValue> {
+        let callee = self.evaluate_expr(call.callee.as_ref())?;
+
+        if let RuntimeValue::Function(callee) = callee {
+            let args: Vec<RuntimeValue> = call
+                .args
+                .iter()
+                .map(|arg| self.evaluate_expr(arg))
+                .collect::<RResult<_>>()?;
+            if callee.arity() == args.len() {
+                callee.call(self, args)
+            } else {
+                Err(RuntimeError::TypeError(TypeError {
+                    message: format!(
+                        "expected {} arguments but got {}",
+                        callee.arity(),
+                        args.len()
+                    )
+                    .into(),
+                }))
+            }
+        } else {
+            Err(RuntimeError::TypeError(TypeError {
+                message: "can only call functions and classes".into(),
+            }))
+        }
     }
 }
 
