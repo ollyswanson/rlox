@@ -1,8 +1,9 @@
-use crate::ast::expr::{Assign, Binary, Expr, Grouping, Literal, Logical, UnOp, Unary, Var};
+use crate::ast::expr::{Assign, Binary, Call, Expr, Grouping, Literal, Logical, UnOp, Unary, Var};
 use crate::ast::util::{AssocOp, Fixity};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
+use crate::span::Span;
 use crate::token::TokenKind;
 
 impl<'a> Parser<'a> {
@@ -91,10 +92,16 @@ impl<'a> Parser<'a> {
             T::Identifier(ref name) => {
                 let name = name.clone();
                 self.bump();
-                Ok(Expr::Var(Var::new(
+
+                let expr = Expr::Var(Var::new(
                     span,
                     Identifier::new(span, name, self.increment()),
-                )))
+                ));
+
+                match self.peek().kind {
+                    T::LeftParen => self.parse_call(expr),
+                    _ => Ok(expr),
+                }
             }
             T::Minus | T::Bang => self.parse_unary(),
             T::LeftParen => self.parse_grouping(),
@@ -136,6 +143,34 @@ impl<'a> Parser<'a> {
         let span = left_paren_span.union(&right_paren.span);
 
         Ok(Expr::Grouping(Grouping::new(span, expr)))
+    }
+
+    fn parse_call(&mut self, mut expr: Expr) -> PResult<Expr> {
+        let span = expr.span();
+
+        while self.matches(&[TokenKind::LeftParen]).is_some() {
+            let (right_span, args) = self.parse_arguments()?;
+            expr = Expr::Call(Call::new(span.union(&right_span), expr, args));
+        }
+
+        Ok(expr)
+    }
+
+    fn parse_arguments(&mut self) -> PResult<(Span, Vec<Expr>)> {
+        use TokenKind::*;
+
+        let mut args = Vec::new();
+        if !self.peek().kind.match_kind(&RightParen) {
+            args.push(self.parse_expr()?);
+            while self.matches(&[Comma]).is_some() {
+                args.push(self.parse_expr()?);
+            }
+        }
+        let right_paren_span = self
+            .expect(RightParen, "expect ')' after arguments".into())?
+            .span;
+
+        Ok((right_paren_span, args))
     }
 }
 
@@ -295,6 +330,31 @@ mod tests {
                     Identifier::new(Span::new(17, 18), "d", 3),
                 )),
             )),
+        ));
+
+        let mut parser = Parser::new(source);
+        let expr = parser.parse_expr().unwrap();
+
+        assert_eq!(expected, expr);
+    }
+
+    #[test]
+    fn parses_calls() {
+        let source = "foo()(1)";
+        let expected = Expr::Call(Call::new(
+            Span::new(0, 8),
+            Expr::Call(Call::new(
+                Span::new(0, 5),
+                Expr::Var(Var::new(
+                    Span::new(0, 3),
+                    Identifier::new(Span::new(0, 3), "foo", 0),
+                )),
+                Vec::new(),
+            )),
+            vec![Expr::Literal(Literal::new(
+                Span::new(6, 7),
+                Value::Number(1.0),
+            ))],
         ));
 
         let mut parser = Parser::new(source);

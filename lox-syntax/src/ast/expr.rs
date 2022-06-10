@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
 
+use itertools::Itertools;
+
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
 use crate::Identifier;
@@ -51,6 +53,7 @@ pub enum Expr {
     Logical(Logical),
     Grouping(Grouping),
     Assign(Assign),
+    Call(Call),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -109,6 +112,13 @@ pub struct Assign {
     pub expr: Box<Expr>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Call {
+    pub span: Span,
+    pub callee: Box<Expr>,
+    pub args: Vec<Expr>,
+}
+
 impl Expr {
     pub fn span(&self) -> Span {
         use Expr::*;
@@ -121,6 +131,7 @@ impl Expr {
             Grouping(g) => g.span,
             Assign(a) => a.span,
             Logical(l) => l.span,
+            Call(c) => c.span,
         }
     }
 }
@@ -208,6 +219,16 @@ impl Assign {
             span,
             var,
             expr: expr.into(),
+        }
+    }
+}
+
+impl Call {
+    pub fn new(span: Span, callee: impl Into<Box<Expr>>, args: Vec<Expr>) -> Self {
+        Self {
+            span,
+            callee: callee.into(),
+            args,
         }
     }
 }
@@ -303,6 +324,12 @@ impl Display for Assign {
     }
 }
 
+impl Display for Call {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} {})", self.callee, self.args.iter().join(", "))
+    }
+}
+
 impl Display for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Expr::*;
@@ -314,6 +341,7 @@ impl Display for Expr {
             Logical(l) => write!(f, "{}", l),
             Grouping(g) => write!(f, "{}", g),
             Assign(a) => write!(f, "{}", a),
+            Call(c) => write!(f, "{}", c),
         }
     }
 }

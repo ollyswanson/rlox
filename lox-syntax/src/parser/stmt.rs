@@ -3,7 +3,6 @@ use crate::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var, While};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
-use crate::span::Span;
 use crate::token::{Token, TokenKind};
 
 static TERMINATOR: &str = "missing semicolon ';'";
@@ -202,7 +201,7 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use crate::ast::expr;
-    use crate::ast::expr::{BinOp, Binary, Expr, Literal, Value};
+    use crate::ast::expr::{Expr, Literal, Value};
     use crate::span::Span;
 
     use super::*;
