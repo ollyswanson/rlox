@@ -1,9 +1,10 @@
 use std::mem;
 use std::rc::Rc;
 
-use lox_syntax::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Stmt, Var, While};
+use lox_syntax::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While};
 
 use crate::interpreter::environment::Environment;
+use crate::interpreter::ControlFlow;
 
 use super::value::function::LoxFunction;
 use super::value::RuntimeValue;
@@ -21,6 +22,7 @@ impl Interpreter {
             If(i) => self.execute_if_stmt(i),
             While(w) => self.execute_while_stmt(w),
             FunDecl(f) => self.execute_fun_decl(f),
+            Return(r) => self.execute_return_stmt(r),
         }
     }
 
@@ -81,6 +83,11 @@ impl Interpreter {
             RuntimeValue::Function(Rc::new(LoxFunction::new(fun_decl))),
         );
         Ok(())
+    }
+
+    fn execute_return_stmt(&mut self, return_stmt: &Return) -> CFResult<()> {
+        let value = self.evaluate_expr(&return_stmt.expr)?;
+        Err(ControlFlow::Return(value))
     }
 
     pub fn scoped_statement<F, T>(&mut self, f: F, environment: Environment) -> CFResult<T>
