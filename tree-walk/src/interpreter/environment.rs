@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use std::mem;
 use std::rc::Rc;
 
-use crate::interpreter::error::{RResult, RuntimeError, Undefined};
+use crate::interpreter::error::{RuntimeError, Undefined};
 use crate::interpreter::value::RuntimeValue;
+use crate::interpreter::CFResult;
 
 #[derive(Debug, Default)]
 struct EnvironmentInner {
@@ -45,7 +46,7 @@ impl Environment {
         self.inner.borrow_mut().locals.insert(name.into(), value);
     }
 
-    pub fn assign(&mut self, name: &str, value: RuntimeValue) -> RResult<RuntimeValue> {
+    pub fn assign(&mut self, name: &str, value: RuntimeValue) -> CFResult<RuntimeValue> {
         let mut inner = self.inner.borrow_mut();
         match inner.locals.get_mut(name) {
             Some(current) => {
@@ -56,12 +57,13 @@ impl Environment {
                 Some(enclosing) => enclosing.assign(name, value),
                 None => Err(RuntimeError::Undefined(Undefined {
                     message: format!("cannot assign undefined variable {}", name).into(),
-                })),
+                })
+                .into()),
             },
         }
     }
 
-    pub fn get(&self, name: &str) -> RResult<RuntimeValue> {
+    pub fn get(&self, name: &str) -> CFResult<RuntimeValue> {
         match &self.inner.borrow().enclosing {
             None => self
                 .inner
@@ -73,6 +75,7 @@ impl Environment {
                     RuntimeError::Undefined(Undefined {
                         message: format!("undefined variable {}", name).into(),
                     })
+                    .into()
                 }),
             Some(enclosing) => self
                 .inner

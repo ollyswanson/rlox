@@ -4,6 +4,7 @@ use std::rc::Rc;
 use lox_syntax::ast::expr::Value;
 
 use crate::interpreter::error::RResult;
+use crate::interpreter::CFResult;
 use crate::Interpreter;
 
 pub mod function;
@@ -55,6 +56,9 @@ impl Display for RuntimeValue {
 
 pub trait Callable: Debug + Display {
     fn arity(&self) -> usize;
-    fn call(&self, interpreter: &mut Interpreter, args: Vec<RuntimeValue>)
-        -> RResult<RuntimeValue>;
+    fn call(
+        &self,
+        interpreter: &mut Interpreter,
+        args: Vec<RuntimeValue>,
+    ) -> CFResult<RuntimeValue>;
 }

@@ -1,11 +1,11 @@
 use lox_syntax::ast::expr::*;
 
-use crate::interpreter::error::{RResult, RuntimeError, TypeError};
+use crate::interpreter::error::{RuntimeError, TypeError};
 use crate::interpreter::value::RuntimeValue;
-use crate::interpreter::Interpreter;
+use crate::interpreter::{CFResult, ControlFlow, Interpreter};
 
 impl Interpreter {
-    pub fn evaluate_expr(&mut self, expr: &Expr) -> RResult<RuntimeValue> {
+    pub fn evaluate_expr(&mut self, expr: &Expr) -> CFResult<RuntimeValue> {
         use Expr::*;
         match expr {
             Literal(literal) => Ok(RuntimeValue::from(&literal.value)),
@@ -19,7 +19,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_unary_expression(&mut self, unary: &Unary) -> RResult<RuntimeValue> {
+    fn evaluate_unary_expression(&mut self, unary: &Unary) -> CFResult<RuntimeValue> {
         use RuntimeValue::*;
         use UnOp::*;
 
@@ -29,12 +29,13 @@ impl Interpreter {
             (Minus, Number(n)) => Ok(Number(-n)),
             (Minus, v) => Err(RuntimeError::TypeError(TypeError {
                 message: format!("Expected number found {}", v).into(),
-            })),
+            })
+            .into()),
             (Bang, v) => Ok(Boolean(v.is_truthy())),
         }
     }
 
-    fn evaluate_binary_expression(&mut self, binary: &Binary) -> RResult<RuntimeValue> {
+    fn evaluate_binary_expression(&mut self, binary: &Binary) -> CFResult<RuntimeValue> {
         use BinOp::*;
         use RuntimeValue::*;
 
@@ -46,11 +47,12 @@ impl Interpreter {
             (String(l), String(r), Add) => Ok(String(format!("{}{}", l, r))),
             (l, r, op) => Err(RuntimeError::TypeError(TypeError {
                 message: format!("Illegal operation {} {} {}", l, op, r).into(),
-            })),
+            })
+            .into()),
         }
     }
 
-    fn evaluate_logical_expression(&mut self, logical: &Logical) -> RResult<RuntimeValue> {
+    fn evaluate_logical_expression(&mut self, logical: &Logical) -> CFResult<RuntimeValue> {
         use LogicalOp::*;
 
         let lhs = self.evaluate_expr(&logical.lhs)?;
@@ -62,12 +64,12 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_assign(&mut self, assign: &Assign) -> RResult<RuntimeValue> {
+    fn evaluate_assign(&mut self, assign: &Assign) -> CFResult<RuntimeValue> {
         let value = self.evaluate_expr(&assign.expr)?;
         self.environment.assign(&assign.var.name, value)
     }
 
-    fn evaluate_call(&mut self, call: &Call) -> RResult<RuntimeValue> {
+    fn evaluate_call(&mut self, call: &Call) -> CFResult<RuntimeValue> {
         let callee = self.evaluate_expr(call.callee.as_ref())?;
 
         if let RuntimeValue::Function(callee) = callee {
@@ -75,7 +77,7 @@ impl Interpreter {
                 .args
                 .iter()
                 .map(|arg| self.evaluate_expr(arg))
-                .collect::<RResult<_>>()?;
+                .collect::<CFResult<_>>()?;
             if callee.arity() == args.len() {
                 callee.call(self, args)
             } else {
@@ -86,22 +88,26 @@ impl Interpreter {
                         args.len()
                     )
                     .into(),
-                }))
+                })
+                .into())
             }
         } else {
             Err(RuntimeError::TypeError(TypeError {
                 message: "can only call functions and classes".into(),
-            }))
+            })
+            .into())
         }
     }
 }
 
-fn evaluate_arithmetic_expression(l: f64, r: f64, op: BinOp) -> RResult<RuntimeValue> {
+fn evaluate_arithmetic_expression(l: f64, r: f64, op: BinOp) -> CFResult<RuntimeValue> {
     use BinOp::*;
     use RuntimeValue::*;
 
     match (l, r, op) {
-        (_l, r, Divide) if r == 0f64 => Err(RuntimeError::DivisionByZero),
+        (_l, r, Divide) if r == 0f64 => {
+            Err(ControlFlow::RuntimeError(RuntimeError::DivisionByZero))
+        }
         (l, r, Divide) => Ok(Number(l / r)),
         (l, r, Multiply) => Ok(Number(l * r)),
         (l, r, Add) => Ok(Number(l + r)),

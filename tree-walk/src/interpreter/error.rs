@@ -9,6 +9,7 @@ pub enum RuntimeError {
     TypeError(TypeError),
     DivisionByZero,
     Undefined(Undefined),
+    ReturnOutsideFunction,
 }
 
 #[derive(Debug)]

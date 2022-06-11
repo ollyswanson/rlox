@@ -4,9 +4,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use lox_syntax::ast::stmt::FunDecl;
 
 use crate::interpreter::environment::Environment;
+use crate::interpreter::{CFResult, ControlFlow};
 
 use super::Interpreter;
-use super::{Callable, RResult, RuntimeValue};
+use super::{Callable, RuntimeValue};
 
 #[derive(Debug)]
 pub struct Clock {}
@@ -20,7 +21,7 @@ impl Callable for Clock {
         &self,
         _interpreter: &mut Interpreter,
         _args: Vec<RuntimeValue>,
-    ) -> RResult<RuntimeValue> {
+    ) -> CFResult<RuntimeValue> {
         Ok(RuntimeValue::Number(
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -56,7 +57,7 @@ impl Callable for LoxFunction {
         &self,
         interpreter: &mut Interpreter,
         args: Vec<RuntimeValue>,
-    ) -> RResult<RuntimeValue> {
+    ) -> CFResult<RuntimeValue> {
         let mut environment = Environment::from_enclosing(interpreter.globals.clone());
 
         for (param, arg) in self.decl.params.iter().cloned().zip(args) {
@@ -65,7 +66,13 @@ impl Callable for LoxFunction {
 
         interpreter.scoped_statement(
             |this| {
-                this.interpret(&self.decl.body)?;
+                for stmt in self.decl.body.iter() {
+                    match this.execute_stmt(stmt) {
+                        Ok(_) => {}
+                        Err(e @ ControlFlow::RuntimeError(_)) => return Err(e),
+                        Err(ControlFlow::Return(v)) => return Ok(v),
+                    }
+                }
                 Ok(RuntimeValue::Nil)
             },
             environment,
