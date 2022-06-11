@@ -40,11 +40,15 @@ impl Display for Clock {
 #[derive(Debug)]
 pub struct LoxFunction {
     decl: FunDecl,
+    closure: Environment,
 }
 
 impl LoxFunction {
-    pub fn new(decl: &FunDecl) -> Self {
-        Self { decl: decl.clone() }
+    pub fn new(decl: &FunDecl, closure: Environment) -> Self {
+        Self {
+            decl: decl.clone(),
+            closure,
+        }
     }
 }
 
@@ -58,7 +62,7 @@ impl Callable for LoxFunction {
         interpreter: &mut Interpreter,
         args: Vec<RuntimeValue>,
     ) -> CFResult<RuntimeValue> {
-        let mut environment = Environment::from_enclosing(interpreter.globals.clone());
+        let mut environment = Environment::from_enclosing(self.closure.clone());
 
         for (param, arg) in self.decl.params.iter().cloned().zip(args) {
             environment.define(param.name, arg);

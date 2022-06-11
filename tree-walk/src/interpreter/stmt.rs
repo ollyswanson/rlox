@@ -80,7 +80,10 @@ impl Interpreter {
     fn execute_fun_decl(&mut self, fun_decl: &FunDecl) -> CFResult<()> {
         self.environment.define(
             &fun_decl.id.name,
-            RuntimeValue::Function(Rc::new(LoxFunction::new(fun_decl))),
+            RuntimeValue::Function(Rc::new(LoxFunction::new(
+                fun_decl,
+                self.environment.clone(),
+            ))),
         );
         Ok(())
     }
