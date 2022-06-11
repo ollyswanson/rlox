@@ -1,10 +1,9 @@
-use std::fmt::{Display, Formatter};
-
 use crate::ast::expr::Expr;
 use crate::span::Span;
-use crate::Identifier;
 
-#[derive(Debug, PartialEq)]
+use super::Identifier;
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
     Print(Print),
     Expr(ExprStmt),
@@ -12,34 +11,35 @@ pub enum Stmt {
     Block(Block),
     If(If),
     While(While),
+    FunDecl(FunDecl),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Var {
     pub span: Span,
     pub id: Identifier,
     pub expr: Expr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Print {
     pub span: Span,
     pub expr: Expr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ExprStmt {
     pub span: Span,
     pub expr: Expr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Block {
     pub span: Span,
     pub stmts: Vec<Stmt>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct If {
     pub span: Span,
     pub cond: Expr,
@@ -47,11 +47,19 @@ pub struct If {
     pub else_stmt: Option<Box<Stmt>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct While {
     pub span: Span,
     pub cond: Expr,
     pub stmt: Box<Stmt>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FunDecl {
+    pub span: Span,
+    pub id: Identifier,
+    pub params: Vec<Identifier>,
+    pub body: Vec<Stmt>,
 }
 
 impl Stmt {
@@ -63,6 +71,7 @@ impl Stmt {
             Stmt::Block(b) => b.span,
             Stmt::If(i) => i.span,
             Stmt::While(w) => w.span,
+            Stmt::FunDecl(f) => f.span,
         }
     }
 }
@@ -113,6 +122,17 @@ impl While {
             span,
             cond,
             stmt: stmt.into(),
+        }
+    }
+}
+
+impl FunDecl {
+    pub fn new(span: Span, id: Identifier, params: Vec<Identifier>, body: Vec<Stmt>) -> Self {
+        Self {
+            span,
+            id,
+            params,
+            body,
         }
     }
 }

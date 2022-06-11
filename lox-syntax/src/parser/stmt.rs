@@ -1,5 +1,5 @@
 use crate::ast::expr::{Expr, Literal, Value};
-use crate::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var, While};
+use crate::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Stmt, Var, While};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
@@ -15,6 +15,7 @@ impl<'a> Parser<'a> {
 
         match self.peek().kind {
             Var => self.parse_var_declaration(),
+            Fun => self.parse_fun_declaration(),
             _ => self.parse_stmt(),
         }
     }
@@ -37,6 +38,55 @@ impl<'a> Parser<'a> {
             identifier,
             expr,
         )))
+    }
+
+    fn parse_fun_declaration(&mut self) -> PResult<Stmt> {
+        let start_span = self.bump().span;
+        let id = self.expect_identifier()?;
+        self.expect(
+            TokenKind::LeftParen,
+            "expect '(' after function identifier".into(),
+        )?;
+
+        let params = self.parse_params()?;
+
+        self.expect(TokenKind::RightParen, "expect ')' after params".into())?;
+        self.expect(
+            TokenKind::LeftBrace,
+            "expect '{' before function body".into(),
+        )?;
+
+        let mut body: Vec<Stmt> = Vec::new();
+        while !self.peek().kind.match_kind(&TokenKind::RightBrace) && !self.is_at_end() {
+            body.push(self.parse_declaration()?);
+        }
+        let end_span = self
+            .expect(
+                TokenKind::RightBrace,
+                "expect '}' after function body".into(),
+            )?
+            .span;
+
+        Ok(Stmt::FunDecl(FunDecl::new(
+            start_span.union(&end_span),
+            id,
+            params,
+            body,
+        )))
+    }
+
+    fn parse_params(&mut self) -> PResult<Vec<Identifier>> {
+        use TokenKind::*;
+
+        let mut params = Vec::new();
+        if !self.peek().kind.match_kind(&RightParen) {
+            params.push(self.expect_identifier()?);
+            while self.matches(&[Comma]).is_some() {
+                params.push(self.expect_identifier()?);
+            }
+        }
+
+        Ok(params)
     }
 
     fn parse_stmt(&mut self) -> PResult<Stmt> {

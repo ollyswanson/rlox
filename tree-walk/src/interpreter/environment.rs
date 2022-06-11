@@ -35,6 +35,12 @@ impl Environment {
         }
     }
 
+    pub fn from_enclosing(enclosing: Environment) -> Environment {
+        let environment = Environment::new();
+        environment.inner.borrow_mut().enclosing = Some(enclosing);
+        environment
+    }
+
     pub fn define(&mut self, name: impl Into<String>, value: RuntimeValue) {
         self.inner.borrow_mut().locals.insert(name.into(), value);
     }

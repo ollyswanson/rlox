@@ -48,12 +48,12 @@ impl Display for RuntimeValue {
             String(s) => write!(f, "\"{}\"", s),
             Number(n) => write!(f, "{}", n),
             Boolean(b) => write!(f, "{}", b),
-            Function(_) => f.write_str("Function"),
+            Function(fun) => write!(f, "{}", fun),
         }
     }
 }
 
-pub trait Callable: Debug {
+pub trait Callable: Debug + Display {
     fn arity(&self) -> usize;
     fn call(&self, interpreter: &mut Interpreter, args: Vec<RuntimeValue>)
         -> RResult<RuntimeValue>;

@@ -1,7 +1,13 @@
-use lox_syntax::ast::stmt::{Block, ExprStmt, If, Print, Stmt, Var, While};
+use std::mem;
+use std::rc::Rc;
 
-use crate::interpreter::error::RResult;
+use lox_syntax::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Stmt, Var, While};
 
+use crate::interpreter::environment::Environment;
+
+use super::error::RResult;
+use super::value::function::LoxFunction;
+use super::value::RuntimeValue;
 use super::Interpreter;
 
 impl Interpreter {
@@ -15,16 +21,20 @@ impl Interpreter {
             Block(b) => self.execute_block_stmt(b),
             If(i) => self.execute_if_stmt(i),
             While(w) => self.execute_while_stmt(w),
+            FunDecl(f) => self.execute_fun_decl(f),
         }
     }
 
     fn execute_block_stmt(&mut self, block: &Block) -> RResult<()> {
-        self.scoped_statement(|i| {
-            for stmt in block.stmts.iter() {
-                i.execute_stmt(stmt)?
-            }
-            Ok(())
-        })
+        self.scoped_statement(
+            |i| {
+                for stmt in block.stmts.iter() {
+                    i.execute_stmt(stmt)?
+                }
+                Ok(())
+            },
+            Environment::from_enclosing(self.environment.clone()),
+        )
     }
 
     fn execute_if_stmt(&mut self, if_stmt: &If) -> RResult<()> {
@@ -66,13 +76,21 @@ impl Interpreter {
         Ok(())
     }
 
-    fn scoped_statement<F>(&mut self, f: F) -> RResult<()>
+    fn execute_fun_decl(&mut self, fun_decl: &FunDecl) -> RResult<()> {
+        self.environment.define(
+            &fun_decl.id.name,
+            RuntimeValue::Function(Rc::new(LoxFunction::new(fun_decl))),
+        );
+        Ok(())
+    }
+
+    pub fn scoped_statement<F, T>(&mut self, f: F, environment: Environment) -> RResult<T>
     where
-        F: FnOnce(&mut Self) -> RResult<()>,
+        F: FnOnce(&mut Self) -> RResult<T>,
     {
-        self.environment.enter_scope();
+        let old_env = mem::replace(&mut self.environment, environment);
         let result = f(self);
-        self.environment.exit_scope();
+        self.environment = old_env;
         result
     }
 }
