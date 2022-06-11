@@ -12,6 +12,7 @@ pub enum Stmt {
     If(If),
     While(While),
     FunDecl(FunDecl),
+    Return(Return),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -62,6 +63,12 @@ pub struct FunDecl {
     pub body: Vec<Stmt>,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct Return {
+    pub span: Span,
+    pub expr: Expr,
+}
+
 impl Stmt {
     pub fn span(&self) -> Span {
         match self {
@@ -72,6 +79,7 @@ impl Stmt {
             Stmt::If(i) => i.span,
             Stmt::While(w) => w.span,
             Stmt::FunDecl(f) => f.span,
+            Stmt::Return(r) => r.span,
         }
     }
 }
@@ -134,5 +142,11 @@ impl FunDecl {
             params,
             body,
         }
+    }
+}
+
+impl Return {
+    pub fn new(span: Span, expr: Expr) -> Self {
+        Self { span, expr }
     }
 }

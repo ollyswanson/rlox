@@ -1,5 +1,5 @@
 use crate::ast::expr::{Expr, Literal, Value};
-use crate::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Stmt, Var, While};
+use crate::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
@@ -99,6 +99,7 @@ impl<'a> Parser<'a> {
             If => self.parse_if(),
             While => self.parse_while(),
             For => self.parse_for(),
+            Return => self.parse_return(),
             _ => self.parse_expr_stmt(),
         }
     }
@@ -157,6 +158,7 @@ impl<'a> Parser<'a> {
             stmt,
         )))
     }
+
     fn parse_for(&mut self) -> PResult<Stmt> {
         let span_start = self.bump().span;
         self.expect(TokenKind::LeftParen, "expect '(' after 'for'".into())?;
@@ -228,6 +230,22 @@ impl<'a> Parser<'a> {
         let span = expr.span().union(&semicolon.span);
 
         Ok(Stmt::Expr(ExprStmt::new(span, expr)))
+    }
+
+    fn parse_return(&mut self) -> PResult<Stmt> {
+        let mut return_span = self.bump().span;
+        let expr = if let Some(semicolon) = self.matches(&[TokenKind::Semicolon]) {
+            let expr = Expr::Literal(Literal::new(return_span, Value::Nil));
+            return_span = return_span.union(&semicolon.span);
+            expr
+        } else {
+            let expr = self.parse_expr()?;
+            let semicolon = self.expect_semicolon()?;
+            return_span = return_span.union(&semicolon.span);
+            expr
+        };
+
+        Ok(Stmt::Return(Return::new(return_span, expr)))
     }
 
     fn expect_semicolon(&mut self) -> PResult<&Token> {
@@ -364,6 +382,20 @@ mod tests {
                 Span::new(13, 21),
                 Expr::Literal(Literal::new(Span::new(19, 20), Value::Number(1.0))),
             )),
+        ));
+
+        let mut parser = Parser::new(source);
+        let stmt = parser.parse_declaration().unwrap();
+
+        assert_eq!(expected, stmt);
+    }
+
+    #[test]
+    fn parse_return() {
+        let source = "return 5;";
+        let expected = Stmt::Return(Return::new(
+            Span::new(0, 9),
+            Expr::Literal(Literal::new(Span::new(7, 8), Value::Number(5.0))),
         ));
 
         let mut parser = Parser::new(source);
