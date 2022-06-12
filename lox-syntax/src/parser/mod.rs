@@ -5,6 +5,7 @@ use error::{PResult, ParseError};
 use scanner::Scanner;
 
 use crate::ast::stmt::Stmt;
+use crate::ast::IdentifierId;
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
 
@@ -25,9 +26,19 @@ mod stmt;
 // `a` in the global scope, and would then be pointed at the `a` in the function scope, such that
 // instead of `1` and `2` being printed to stdout, there would be an error due to printing an
 // undeclared variable.
+#[derive(Debug, Copy, Clone, Default)]
+pub struct ParserState {
+    variable_id: IdentifierId,
+}
+
+impl ParserState {
+    pub fn new() -> Self {
+        Self { variable_id: 0 }
+    }
+}
 
 pub struct Parser<'a> {
-    variable_id: usize,
+    state: ParserState,
     scanner: Scanner<'a>,
     current_token: Token,
     prev_token: Token,
@@ -41,13 +52,29 @@ impl<'a> Parser<'a> {
         let current_token = scanner.next().unwrap();
 
         Self {
-            variable_id: 0,
+            state: ParserState::new(),
             scanner,
             current_token,
             // Use EOF token as dummy to start the scanner
             prev_token: Token::new(TokenKind::Eof, Span::new(0, 0)),
             diagnostics: Vec::new(),
         }
+    }
+
+    /// Used in REPL mode. A new parser is instantiated for each line of input for simplicity.
+    /// However each usage of a variable is assigned a unique id, therefore state needs to be passed
+    /// between parsers to allow continuation without using global state.
+    pub fn with_state(mut self, state: ParserState) -> Self {
+        self.state = state;
+        self
+    }
+
+    pub fn state(&self) -> ParserState {
+        self.state
+    }
+
+    pub fn diagnostics(&self) -> &[ParseError] {
+        &self.diagnostics
     }
 
     pub fn parse(&mut self) -> Vec<Stmt> {
@@ -162,7 +189,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn increment(&mut self) -> usize {
-        let next_id = self.variable_id + 1;
-        std::mem::replace(&mut self.variable_id, next_id)
+        let next_id = self.state.variable_id + 1;
+        std::mem::replace(&mut self.state.variable_id, next_id)
     }
 }

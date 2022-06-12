@@ -23,20 +23,8 @@ fn run_source(path: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn run_repl() -> Result<(), Box<dyn std::error::Error>> {
-    let mut interpreter = Interpreter::new();
-    let stdout = io::stdout();
-    stdout.lock().write_all("> ".as_ref())?;
-    stdout.lock().flush()?;
-
-    for line in io::stdin().lock().lines() {
-        match run(&line?, &mut interpreter) {
-            Ok(_) => {}
-            Err(e) => eprintln!("{}", e),
-        };
-
-        stdout.lock().write_all("> ".as_ref())?;
-        stdout.lock().flush()?;
-    }
+    let mut repl = crate::tree_walk::Repl::new();
+    repl.start()?;
 
     Ok(())
 }

@@ -9,7 +9,7 @@ impl Interpreter {
         use Expr::*;
         match expr {
             Literal(literal) => Ok(RuntimeValue::from(&literal.value)),
-            Var(v) => self.environment.get(&v.id.name),
+            Var(v) => self.evaluate_var_expr(v),
             Grouping(g) => self.evaluate_expr(&g.expr),
             Binary(b) => self.evaluate_binary_expression(b),
             Logical(l) => self.evaluate_logical_expression(l),
@@ -17,6 +17,11 @@ impl Interpreter {
             Assign(a) => self.evaluate_assign(a),
             Call(c) => self.evaluate_call(c),
         }
+    }
+
+    fn evaluate_var_expr(&self, var_expr: &Var) -> CFResult<RuntimeValue> {
+        // All retrievals have been statically analysed by the resolver
+        self.get_variable(&var_expr.id)
     }
 
     fn evaluate_unary_expression(&mut self, unary: &Unary) -> CFResult<RuntimeValue> {
@@ -66,7 +71,12 @@ impl Interpreter {
 
     fn evaluate_assign(&mut self, assign: &Assign) -> CFResult<RuntimeValue> {
         let value = self.evaluate_expr(&assign.expr)?;
-        self.environment.assign(&assign.var.name, value)
+
+        if let Some(&depth) = self.locals.get(&assign.var.id) {
+            Ok(self.environment.assign_at(&assign.var.name, value, depth))
+        } else {
+            self.globals.assign(&assign.var.name, value)
+        }
     }
 
     fn evaluate_call(&mut self, call: &Call) -> CFResult<RuntimeValue> {

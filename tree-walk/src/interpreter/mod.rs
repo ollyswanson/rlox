@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use environment::Environment;
 use error::RResult;
 use error::RuntimeError;
 use lox_syntax::ast::stmt::Stmt;
+use lox_syntax::ast::IdentifierId;
+use lox_syntax::Identifier;
 use value::function::Clock;
 use value::RuntimeValue;
 
@@ -15,6 +18,7 @@ mod value;
 
 pub type CFResult<T> = Result<T, ControlFlow>;
 
+#[derive(Debug)]
 pub enum ControlFlow {
     Return(RuntimeValue),
     RuntimeError(RuntimeError),
@@ -30,6 +34,7 @@ impl From<RuntimeError> for ControlFlow {
 pub struct Interpreter {
     environment: Environment,
     globals: Environment,
+    locals: HashMap<IdentifierId, usize>,
 }
 
 impl Interpreter {
@@ -51,6 +56,18 @@ impl Interpreter {
         }
         Ok(())
     }
+
+    pub fn resolve(&mut self, id: &Identifier, depth: usize) {
+        self.locals.insert(id.id, depth);
+    }
+
+    fn get_variable(&self, id: &Identifier) -> CFResult<RuntimeValue> {
+        if let Some(&depth) = self.locals.get(&id.id) {
+            Ok(self.environment.get_with_depth(&id.name, depth))
+        } else {
+            self.globals.get(&id.name)
+        }
+    }
 }
 
 impl Default for Interpreter {
@@ -62,6 +79,7 @@ impl Default for Interpreter {
         Self {
             environment,
             globals,
+            locals: HashMap::new(),
         }
     }
 }

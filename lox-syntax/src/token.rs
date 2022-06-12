@@ -90,7 +90,16 @@ pub enum ScanError {
     UnterminatedString,
 }
 
-impl ScanError {}
+impl Display for ScanError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use ScanError::*;
+
+        match self {
+            UnrecognizedToken { unrecognized } => write!(f, "unrecognised token {}", unrecognized),
+            UnterminatedString => write!(f, "unterminated string"),
+        }
+    }
+}
 
 impl Display for TokenKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

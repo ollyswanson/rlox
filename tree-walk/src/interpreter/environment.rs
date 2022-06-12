@@ -63,6 +63,13 @@ impl Environment {
         }
     }
 
+    pub fn assign_at(&mut self, name: &str, value: RuntimeValue, depth: usize) -> RuntimeValue {
+        let env = self.ancestor(depth);
+        let mut inner = env.inner.borrow_mut();
+        *inner.locals.get_mut(name).unwrap() = value.clone();
+        value
+    }
+
     pub fn get(&self, name: &str) -> CFResult<RuntimeValue> {
         match &self.inner.borrow().enclosing {
             None => self
@@ -86,5 +93,23 @@ impl Environment {
                 .map(Ok)
                 .unwrap_or_else(|| enclosing.get(name)),
         }
+    }
+
+    pub fn get_with_depth(&self, name: &str, depth: usize) -> RuntimeValue {
+        let env = self.ancestor(depth);
+        let inner = env.inner.borrow();
+
+        inner.locals.get(name).cloned().expect(
+            "Semantic analysis by the resolver guarantees that this variable will be present",
+        )
+    }
+
+    fn ancestor(&self, depth: usize) -> Environment {
+        let mut env = self.clone();
+        for _ in 0..depth {
+            let enclosing = env.inner.borrow().enclosing.clone().unwrap();
+            env = enclosing.clone();
+        }
+        env
     }
 }
