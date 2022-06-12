@@ -10,7 +10,7 @@ static TERMINATOR: &str = "missing semicolon ';'";
 impl<'a> Parser<'a> {
     // Would it be possible to switch to something that uses precedence or state instead of lots
     // of recursion?
-    pub fn parse_declaration(&mut self) -> PResult<Stmt> {
+    pub(super) fn parse_declaration(&mut self) -> PResult<Stmt> {
         use TokenKind::*;
 
         match self.peek().kind {

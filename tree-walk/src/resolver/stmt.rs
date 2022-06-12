@@ -23,6 +23,8 @@ impl Resolver<'_> {
     }
 
     fn resolve_fun_decl(&mut self, fun_decl: &FunDecl) {
+        self.declare(&fun_decl.id);
+        self.define(&fun_decl.id);
         self.scoped(|this| {
             for param in fun_decl.params.iter() {
                 this.declare(param);

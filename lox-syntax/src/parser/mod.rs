@@ -93,13 +93,13 @@ impl<'a> Parser<'a> {
         statements
     }
 
-    pub fn bump(&mut self) -> &Token {
+    fn bump(&mut self) -> &Token {
         mem::swap(&mut self.prev_token, &mut self.current_token);
         self.current_token = self.scanner.next().expect("Should not advance past EOF");
         self.prev()
     }
 
-    pub fn synchronize(&mut self) {
+    fn synchronize(&mut self) {
         use TokenKind::*;
         while !self.is_at_end() {
             let token = self.bump();
@@ -126,23 +126,19 @@ impl<'a> Parser<'a> {
         }
     }
 
-    #[inline]
-    pub fn peek(&self) -> &Token {
+    fn peek(&self) -> &Token {
         &self.current_token
     }
 
-    #[inline]
-    pub fn prev(&self) -> &Token {
+    fn prev(&self) -> &Token {
         &self.prev_token
     }
 
-    #[inline]
-    pub fn is_at_end(&self) -> bool {
+    fn is_at_end(&self) -> bool {
         self.current_token.kind == TokenKind::Eof
     }
 
-    #[inline]
-    pub fn matches(&mut self, kinds: &[TokenKind]) -> Option<&Token> {
+    fn matches(&mut self, kinds: &[TokenKind]) -> Option<&Token> {
         let token = self.peek();
 
         if kinds.iter().any(|kind| token.kind.match_kind(kind)) {
@@ -152,7 +148,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn match_and_or<T, F>(&mut self, kinds: &[TokenKind], and: T, or: F) -> T
+    fn match_and_or<T, F>(&mut self, kinds: &[TokenKind], and: T, or: F) -> T
     where
         F: FnOnce(&mut Self) -> T,
     {
@@ -163,7 +159,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn peek_and_or<T, F>(&mut self, kinds: &[TokenKind], and: T, or: F) -> T
+    fn peek_and_or<T, F>(&mut self, kinds: &[TokenKind], and: T, or: F) -> T
     where
         F: FnOnce(&mut Self) -> T,
     {
@@ -177,7 +173,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn expect(&mut self, expected: TokenKind, message: Cow<'static, str>) -> PResult<&Token> {
+    fn expect(&mut self, expected: TokenKind, message: Cow<'static, str>) -> PResult<&Token> {
         if self.peek().kind.match_kind(&expected) {
             Ok(self.bump())
         } else {
@@ -188,7 +184,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn increment(&mut self) -> usize {
+    fn increment(&mut self) -> usize {
         let next_id = self.state.variable_id + 1;
         std::mem::replace(&mut self.state.variable_id, next_id)
     }

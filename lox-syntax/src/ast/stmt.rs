@@ -1,6 +1,6 @@
-use crate::ast::expr::Expr;
 use crate::span::Span;
 
+use super::expr::Expr;
 use super::Identifier;
 
 #[derive(Debug, PartialEq, Clone)]

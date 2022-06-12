@@ -7,7 +7,7 @@ use crate::span::Span;
 use crate::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    pub fn parse_expr(&mut self) -> PResult<Expr> {
+    pub(super) fn parse_expr(&mut self) -> PResult<Expr> {
         self.parse_assoc_op_with_prec(0)
     }
 

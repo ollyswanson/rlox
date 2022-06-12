@@ -21,6 +21,8 @@ impl Resolver<'_> {
 
     fn resolve_var_expr(&mut self, var: &Var) {
         match self.scopes.last().and_then(|scope| scope.get(&var.id.name)) {
+            // If variable is referenced before it has been defined but after it has been declared
+            // then it is being used in a situation such as var a = a;
             Some(BindingState::Declared) => {
                 self.error(ResolverError::InitializeFromSelf { span: var.span })
             }

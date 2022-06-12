@@ -4,7 +4,8 @@ use itertools::Itertools;
 
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
-use crate::Identifier;
+
+use super::Identifier;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum UnOp {
