@@ -10,6 +10,8 @@ pub struct Repl {
     interpreter: Interpreter,
     /// src accumulator to allow multiline input
     curr_src: String,
+    // TODO: leaky abstraction, but currently necessary when running the REPL, is there a better
+    // way to pass state between parsers or any way to avoid needing state completely?
     parser_state: ParserState,
 }
 
