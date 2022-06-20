@@ -2,13 +2,12 @@ use std::fmt::{Display, Formatter};
 
 use lox_syntax::span::Span;
 
-pub type ResolveResult<T> = Result<T, ResolverError>;
-
 #[derive(Debug)]
 pub enum ResolverError {
     InitializeFromSelf { span: Span },
     AlreadyDeclared { span: Span },
     Undeclared { span: Span, message: String },
+    ReturnOutsideFn { span: Span },
 }
 
 impl Display for ResolverError {
@@ -16,11 +15,10 @@ impl Display for ResolverError {
         use ResolverError::*;
 
         match self {
-            InitializeFromSelf { span: _ } => {
-                f.write_str("defined variable from self in declaration")
-            }
-            AlreadyDeclared { span: _ } => f.write_str("variable has already been declared"),
-            Undeclared { span: _, message } => f.write_str(message),
+            InitializeFromSelf { .. } => f.write_str("defined variable from self in declaration"),
+            AlreadyDeclared { .. } => f.write_str("variable has already been declared"),
+            Undeclared { message, .. } => f.write_str(message),
+            ReturnOutsideFn { .. } => f.write_str("can't return outside of function body"),
         }
     }
 }

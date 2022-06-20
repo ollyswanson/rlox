@@ -1,6 +1,6 @@
 use lox_syntax::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While};
 
-use super::Resolver;
+use super::{FunctionType, Resolver, ResolverError};
 
 impl Resolver<'_> {
     pub(super) fn resolve_stmt(&mut self, stmt: &Stmt) {
@@ -25,7 +25,7 @@ impl Resolver<'_> {
     fn resolve_fun_decl(&mut self, fun_decl: &FunDecl) {
         self.declare(&fun_decl.id);
         self.define(&fun_decl.id);
-        self.scoped(|this| {
+        self.scoped_fn_decl(|this| {
             for param in fun_decl.params.iter() {
                 this.declare(param);
                 this.define(param);
@@ -52,6 +52,11 @@ impl Resolver<'_> {
     }
 
     fn resolve_return_stmt(&mut self, return_stmt: &Return) {
+        if self.function_type == FunctionType::None {
+            self.error(ResolverError::ReturnOutsideFn {
+                span: return_stmt.span,
+            });
+        }
         self.resolve_expr(&return_stmt.expr);
     }
 

@@ -20,7 +20,6 @@ impl Interpreter {
     }
 
     fn evaluate_var_expr(&self, var_expr: &Var) -> CFResult<RuntimeValue> {
-        // All retrievals have been statically analysed by the resolver
         self.get_variable(&var_expr.id)
     }
 

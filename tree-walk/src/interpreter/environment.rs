@@ -95,6 +95,9 @@ impl Environment {
         }
     }
 
+    // TODO: There's a dependence on use of the resolver to make static guarantees about the
+    // presence of values. It might be better to still return a result and not unwrap here. As
+    // otherwise there is a strict dependence on the Resolver by the Interpreter.
     pub fn get_with_depth(&self, name: &str, depth: usize) -> RuntimeValue {
         let env = self.ancestor(depth);
         let inner = env.inner.borrow();

@@ -19,12 +19,19 @@ pub struct Resolver<'a> {
     // all errors back to the user. The AST has already been created without errors so continuation
     // makes sense.
     diagnostics: Vec<ResolverError>,
+    function_type: FunctionType,
 }
 
 #[derive(Debug)]
-pub enum BindingState {
+enum BindingState {
     Declared,
     Defined,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum FunctionType {
+    None,
+    Function,
 }
 
 impl<'a> Resolver<'a> {
@@ -33,6 +40,7 @@ impl<'a> Resolver<'a> {
             interpreter,
             scopes: Vec::new(),
             diagnostics: Vec::new(),
+            function_type: FunctionType::None,
         }
     }
 
@@ -93,6 +101,16 @@ impl<'a> Resolver<'a> {
         self.begin_scope();
         f(self);
         self.end_scope();
+    }
+
+    fn scoped_fn_decl<F>(&mut self, f: F)
+    where
+        F: FnOnce(&mut Self),
+    {
+        let restore = self.function_type;
+        self.function_type = FunctionType::Function;
+        self.scoped(f);
+        self.function_type = restore;
     }
 
     fn error(&mut self, error: ResolverError) {
