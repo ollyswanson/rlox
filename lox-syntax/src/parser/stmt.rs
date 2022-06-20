@@ -1,11 +1,20 @@
-use crate::ast::expr::{Expr, Literal, Value};
 use crate::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While};
 use crate::ast::Identifier;
+use crate::ast::{
+    expr::{Expr, Literal, Value},
+    stmt::ClassDecl,
+};
 use crate::parser::error::{PResult, ParseError};
 use crate::parser::Parser;
 use crate::token::{Token, TokenKind};
 
 static TERMINATOR: &str = "missing semicolon ';'";
+
+#[derive(Debug, Copy, Clone)]
+enum FunctionType {
+    Method,
+    Function,
+}
 
 impl<'a> Parser<'a> {
     // Would it be possible to switch to something that uses precedence or state instead of lots
@@ -16,6 +25,7 @@ impl<'a> Parser<'a> {
         match self.peek().kind {
             Var => self.parse_var_declaration(),
             Fun => self.parse_fun_declaration(),
+            Class => self.parse_class_declaration(),
             _ => self.parse_stmt(),
         }
     }
@@ -41,8 +51,21 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_fun_declaration(&mut self) -> PResult<Stmt> {
-        let start_span = self.bump().span;
-        let id = self.expect_identifier()?;
+        self.parse_fun_inner(FunctionType::Function)
+            .map(Stmt::FunDecl)
+    }
+
+    fn parse_fun_inner(&mut self, function_type: FunctionType) -> PResult<FunDecl> {
+        let (start_span, id) = match function_type {
+            FunctionType::Function => {
+                // consume fun keyword
+                (self.bump().span, self.expect_identifier()?)
+            }
+            FunctionType::Method => {
+                let id = self.expect_identifier()?;
+                (id.span, id)
+            }
+        };
         self.expect(
             TokenKind::LeftParen,
             "expect '(' after function identifier".into(),
@@ -67,12 +90,7 @@ impl<'a> Parser<'a> {
             )?
             .span;
 
-        Ok(Stmt::FunDecl(FunDecl::new(
-            start_span.union(&end_span),
-            id,
-            params,
-            body,
-        )))
+        Ok(FunDecl::new(start_span.union(&end_span), id, params, body))
     }
 
     fn parse_params(&mut self) -> PResult<Vec<Identifier>> {
@@ -87,6 +105,28 @@ impl<'a> Parser<'a> {
         }
 
         Ok(params)
+    }
+
+    fn parse_class_declaration(&mut self) -> PResult<Stmt> {
+        let start_span = self.bump().span;
+        let id = self.expect_identifier()?;
+
+        self.expect(TokenKind::LeftBrace, "expect '{' before class body".into())?;
+        let mut methods: Vec<FunDecl> = Vec::new();
+
+        while !self.peek().kind.match_kind(&TokenKind::RightBrace) && !self.is_at_end() {
+            methods.push(self.parse_fun_inner(FunctionType::Method)?);
+        }
+
+        let end_span = self
+            .expect(TokenKind::RightBrace, "expect '}' after class body.".into())?
+            .span;
+
+        Ok(Stmt::ClassDecl(ClassDecl::new(
+            start_span.union(&end_span),
+            id,
+            methods,
+        )))
     }
 
     fn parse_stmt(&mut self) -> PResult<Stmt> {
@@ -397,6 +437,30 @@ mod tests {
         let expected = Stmt::Return(Return::new(
             Span::new(0, 9),
             Expr::Literal(Literal::new(Span::new(7, 8), Value::Number(5.0))),
+        ));
+
+        let mut parser = Parser::new(source);
+        let stmt = parser.parse_declaration().unwrap();
+
+        assert_eq!(expected, stmt);
+    }
+
+    #[test]
+    fn parse_class_decl() {
+        let source = "class Foo { one() { return 1; } }";
+
+        let expected = Stmt::ClassDecl(ClassDecl::new(
+            Span::new(0, 33),
+            Identifier::new(Span::new(6, 9), "Foo", 0),
+            vec![FunDecl::new(
+                Span::new(12, 31),
+                Identifier::new(Span::new(12, 15), "one", 1),
+                Vec::new(),
+                vec![Stmt::Return(Return::new(
+                    Span::new(20, 29),
+                    Expr::Literal(Literal::new(Span::new(27, 28), Value::Number(1.0))),
+                ))],
+            )],
         ));
 
         let mut parser = Parser::new(source);

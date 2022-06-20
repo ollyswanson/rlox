@@ -13,6 +13,7 @@ pub enum Stmt {
     While(While),
     FunDecl(FunDecl),
     Return(Return),
+    ClassDecl(ClassDecl),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -69,6 +70,13 @@ pub struct Return {
     pub expr: Expr,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct ClassDecl {
+    pub span: Span,
+    pub id: Identifier,
+    pub methods: Vec<FunDecl>,
+}
+
 impl Stmt {
     pub fn span(&self) -> Span {
         match self {
@@ -80,6 +88,7 @@ impl Stmt {
             Stmt::While(w) => w.span,
             Stmt::FunDecl(f) => f.span,
             Stmt::Return(r) => r.span,
+            Stmt::ClassDecl(c) => c.span,
         }
     }
 }
@@ -148,5 +157,11 @@ impl FunDecl {
 impl Return {
     pub fn new(span: Span, expr: Expr) -> Self {
         Self { span, expr }
+    }
+}
+
+impl ClassDecl {
+    pub fn new(span: Span, id: Identifier, methods: Vec<FunDecl>) -> Self {
+        Self { span, id, methods }
     }
 }
