@@ -3,8 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use lox_syntax::ast::stmt::FunDecl;
 
-use crate::interpreter::environment::Environment;
-use crate::interpreter::{CFResult, ControlFlow};
+use crate::interpreter::{CFResult, ControlFlow, Environment};
 
 use super::Interpreter;
 use super::{Callable, RuntimeValue};

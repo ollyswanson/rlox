@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use lox_syntax::ast::expr::Value;
 
-use crate::interpreter::error::RResult;
 use crate::interpreter::CFResult;
 use crate::Interpreter;
 
