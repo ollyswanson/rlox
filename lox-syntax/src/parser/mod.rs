@@ -177,9 +177,11 @@ impl<'a> Parser<'a> {
         if self.peek().kind.match_kind(&expected) {
             Ok(self.bump())
         } else {
+            let token = self.peek().clone();
             Err(ParseError::UnexpectedToken {
                 message,
-                span: self.peek().span,
+                span: token.span,
+                kind: token.kind,
             })
         }
     }

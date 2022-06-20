@@ -261,6 +261,7 @@ impl<'a> Parser<'a> {
             _ => Err(ParseError::UnexpectedToken {
                 message: format!("Expected identifier found {}", token.kind).into(),
                 span: token.span,
+                kind: token.kind.clone(),
             }),
         }
     }

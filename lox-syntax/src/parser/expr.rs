@@ -109,6 +109,7 @@ impl<'a> Parser<'a> {
             _ => Err(ParseError::UnexpectedToken {
                 span,
                 message: format!("Unexpected token {}", token.kind).into(),
+                kind: token.kind.clone(),
             }),
         }
     }

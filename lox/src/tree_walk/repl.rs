@@ -30,27 +30,39 @@ impl Repl {
         stdout.lock().flush()?;
 
         for line in io::stdin().lock().lines() {
-            self.run_line(&line?);
+            self.curr_src.push_str(&line?);
+            self.run_line();
 
-            stdout.lock().write_all(">> ".as_ref())?;
+            if self.curr_src.is_empty() {
+                // empty prompt
+                stdout.lock().write_all(">> ".as_ref())?;
+            } else {
+                // continuation
+                stdout.lock().write_all(".. ".as_ref())?;
+            }
             stdout.lock().flush()?;
         }
         Ok(())
     }
 
-    fn run_line(&mut self, line: &str) {
-        let mut parser = Parser::new(line).with_state(self.parser_state);
+    fn run_line(&mut self) {
+        let mut parser = Parser::new(&self.curr_src).with_state(self.parser_state);
         let statements = parser.parse();
         let diagnostics = parser.diagnostics();
 
         if !parser.diagnostics().is_empty() {
-            for diagnostic in diagnostics.iter() {
-                eprintln!("{}", diagnostic);
+            if parser.diagnostics().iter().all(|e| e.allows_continuation()) {
+                return;
+            } else {
+                for diagnostic in diagnostics.iter() {
+                    eprintln!("{}", diagnostic);
+                }
+                return;
             }
-            return;
         }
 
         self.parser_state = parser.state();
+        self.curr_src.clear();
 
         let mut resolver = Resolver::new(&mut self.interpreter);
         resolver.resolve(&statements);

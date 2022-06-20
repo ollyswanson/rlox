@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
 
-use crate::span::Span;
 pub use crate::token::ScanError;
+use crate::{span::Span, token::TokenKind};
 
 pub type PResult<T> = Result<T, ParseError>;
 
@@ -15,6 +15,7 @@ pub enum ParseError {
     UnexpectedToken {
         span: Span,
         message: Cow<'static, str>,
+        kind: TokenKind,
     },
     InvalidAssignment {
         span: Span,
@@ -22,13 +23,23 @@ pub enum ParseError {
     },
 }
 
+impl ParseError {
+    pub fn allows_continuation(&self) -> bool {
+        match self {
+            ParseError::ScanError { error, .. } => matches!(error, ScanError::UnterminatedString),
+            ParseError::UnexpectedToken { kind, .. } => matches!(kind, &TokenKind::Eof),
+            ParseError::InvalidAssignment { .. } => false,
+        }
+    }
+}
+
 impl Display for ParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use ParseError::*;
         match self {
-            ScanError { error, span: _ } => write!(f, "{}", error),
-            UnexpectedToken { message, span: _ } => f.write_str(message),
-            InvalidAssignment { message, span: _ } => f.write_str(message),
+            ScanError { error, .. } => write!(f, "{}", error),
+            UnexpectedToken { message, .. } => f.write_str(message),
+            InvalidAssignment { message, .. } => f.write_str(message),
         }
     }
 }
