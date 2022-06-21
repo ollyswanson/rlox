@@ -16,6 +16,7 @@ impl Interpreter {
             Unary(u) => self.evaluate_unary_expression(u),
             Assign(a) => self.evaluate_assign(a),
             Call(c) => self.evaluate_call(c),
+            Get(g) => todo!(),
         }
     }
 

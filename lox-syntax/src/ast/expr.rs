@@ -55,6 +55,7 @@ pub enum Expr {
     Grouping(Grouping),
     Assign(Assign),
     Call(Call),
+    Get(Get),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -120,6 +121,13 @@ pub struct Call {
     pub args: Vec<Expr>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Get {
+    pub span: Span,
+    pub object: Box<Expr>,
+    pub property: Identifier,
+}
+
 impl Expr {
     pub fn span(&self) -> Span {
         use Expr::*;
@@ -133,6 +141,7 @@ impl Expr {
             Assign(a) => a.span,
             Logical(l) => l.span,
             Call(c) => c.span,
+            Get(g) => g.span,
         }
     }
 }
@@ -234,6 +243,16 @@ impl Call {
     }
 }
 
+impl Get {
+    pub fn new(span: Span, object: impl Into<Box<Expr>>, property: Identifier) -> Self {
+        Self {
+            span,
+            object: object.into(),
+            property,
+        }
+    }
+}
+
 // impl Display
 
 impl Display for UnOp {
@@ -331,6 +350,12 @@ impl Display for Call {
     }
 }
 
+impl Display for Get {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(get {} {})", self.object, self.property.name)
+    }
+}
+
 impl Display for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Expr::*;
@@ -343,6 +368,7 @@ impl Display for Expr {
             Grouping(g) => write!(f, "{}", g),
             Assign(a) => write!(f, "{}", a),
             Call(c) => write!(f, "{}", c),
+            Get(g) => write!(f, "{}", g),
         }
     }
 }

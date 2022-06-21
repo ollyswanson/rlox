@@ -4,10 +4,10 @@ use std::mem;
 use error::{PResult, ParseError};
 use scanner::Scanner;
 
-use crate::ast::stmt::Stmt;
 use crate::ast::IdentifierId;
 use crate::span::Span;
 use crate::token::{Token, TokenKind};
+use crate::{ast::stmt::Stmt, Identifier};
 
 pub mod error;
 mod expr;
@@ -189,5 +189,19 @@ impl<'a> Parser<'a> {
     fn increment(&mut self) -> usize {
         let next_id = self.state.variable_id + 1;
         std::mem::replace(&mut self.state.variable_id, next_id)
+    }
+
+    fn expect_identifier(&mut self) -> PResult<Identifier> {
+        let id = self.increment();
+        let token = self.bump();
+
+        match &token.kind {
+            TokenKind::Identifier(i) => Ok(Identifier::new(token.span, i, id)),
+            _ => Err(ParseError::UnexpectedToken {
+                message: format!("Expected identifier found {}", token.kind).into(),
+                span: token.span,
+                kind: token.kind.clone(),
+            }),
+        }
     }
 }

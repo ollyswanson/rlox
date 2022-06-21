@@ -4,7 +4,7 @@ use crate::ast::{
     expr::{Expr, Literal, Value},
     stmt::ClassDecl,
 };
-use crate::parser::error::{PResult, ParseError};
+use crate::parser::error::PResult;
 use crate::parser::Parser;
 use crate::token::{Token, TokenKind};
 
@@ -290,20 +290,6 @@ impl<'a> Parser<'a> {
 
     fn expect_semicolon(&mut self) -> PResult<&Token> {
         self.expect(TokenKind::Semicolon, TERMINATOR.into())
-    }
-
-    fn expect_identifier(&mut self) -> PResult<Identifier> {
-        let id = self.increment();
-        let token = self.bump();
-
-        match &token.kind {
-            TokenKind::Identifier(i) => Ok(Identifier::new(token.span, i, id)),
-            _ => Err(ParseError::UnexpectedToken {
-                message: format!("Expected identifier found {}", token.kind).into(),
-                span: token.span,
-                kind: token.kind.clone(),
-            }),
-        }
     }
 }
 

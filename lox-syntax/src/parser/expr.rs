@@ -1,4 +1,6 @@
-use crate::ast::expr::{Assign, Binary, Call, Expr, Grouping, Literal, Logical, UnOp, Unary, Var};
+use crate::ast::expr::{
+    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, UnOp, Unary, Var,
+};
 use crate::ast::util::{AssocOp, Fixity};
 use crate::ast::Identifier;
 use crate::parser::error::{PResult, ParseError};
@@ -98,8 +100,13 @@ impl<'a> Parser<'a> {
                     Identifier::new(span, name, self.increment()),
                 ));
 
+                let expr = match self.peek().kind {
+                    T::LeftParen => self.parse_call(expr)?,
+                    _ => expr,
+                };
+
                 match self.peek().kind {
-                    T::LeftParen => self.parse_call(expr),
+                    T::Dot => self.parse_get(expr),
                     _ => Ok(expr),
                 }
             }
@@ -172,6 +179,14 @@ impl<'a> Parser<'a> {
             .span;
 
         Ok((right_paren_span, args))
+    }
+
+    fn parse_get(&mut self, mut expr: Expr) -> PResult<Expr> {
+        while let Some(_dot) = self.matches(&[TokenKind::Dot]) {
+            let property = self.expect_identifier()?;
+            expr = Expr::Get(Get::new(expr.span().union(&property.span), expr, property))
+        }
+        Ok(expr)
     }
 }
 
@@ -356,6 +371,32 @@ mod tests {
                 Span::new(6, 7),
                 Value::Number(1.0),
             ))],
+        ));
+
+        let mut parser = Parser::new(source);
+        let expr = parser.parse_expr().unwrap();
+
+        assert_eq!(expected, expr);
+    }
+
+    #[test]
+    fn parse_get() {
+        let source = "foo().bar.baz";
+        let expected = Expr::Get(Get::new(
+            Span::new(0, 13),
+            Expr::Get(Get::new(
+                Span::new(0, 9),
+                Expr::Call(Call::new(
+                    Span::new(0, 5),
+                    Expr::Var(Var::new(
+                        Span::new(0, 3),
+                        Identifier::new(Span::new(0, 3), "foo", 0),
+                    )),
+                    vec![],
+                )),
+                Identifier::new(Span::new(6, 9), "bar", 1),
+            )),
+            Identifier::new(Span::new(10, 13), "baz", 2),
         ));
 
         let mut parser = Parser::new(source);

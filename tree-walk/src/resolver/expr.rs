@@ -16,6 +16,7 @@ impl Resolver<'_> {
             Expr::Unary(u) => self.resolve_unary_expr(u),
             Expr::Logical(l) => self.resolve_logical_expr(l),
             Expr::Call(c) => self.resolve_call_expr(c),
+            Expr::Get(g) => todo!(),
         }
     }
 
