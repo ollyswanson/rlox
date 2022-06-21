@@ -1,6 +1,4 @@
 use std::fs;
-use std::io;
-use std::io::{BufRead, Write};
 
 use lox_syntax::Parser;
 use tree_walk::Interpreter;

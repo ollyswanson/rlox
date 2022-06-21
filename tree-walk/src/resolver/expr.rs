@@ -1,4 +1,4 @@
-use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Grouping, Logical, Unary, Var};
+use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Logical, Var};
 
 use crate::resolver::error::ResolverError;
 use crate::resolver::BindingState;
@@ -12,11 +12,11 @@ impl Resolver<'_> {
             Expr::Assign(a) => self.resolve_assign_expr(a),
             Expr::Literal(_) => {}
             Expr::Binary(b) => self.resolve_binary_expr(b),
-            Expr::Grouping(g) => self.resolve_grouping_expr(g),
-            Expr::Unary(u) => self.resolve_unary_expr(u),
+            Expr::Grouping(g) => self.resolve_expr(&g.expr),
+            Expr::Unary(u) => self.resolve_expr(&u.expr),
             Expr::Logical(l) => self.resolve_logical_expr(l),
             Expr::Call(c) => self.resolve_call_expr(c),
-            Expr::Get(g) => todo!(),
+            Expr::Get(g) => self.resolve_expr(&g.object),
         }
     }
 
@@ -46,14 +46,6 @@ impl Resolver<'_> {
         for arg in call.args.iter() {
             self.resolve_expr(arg);
         }
-    }
-
-    fn resolve_grouping_expr(&mut self, grouping: &Grouping) {
-        self.resolve_expr(&grouping.expr);
-    }
-
-    fn resolve_unary_expr(&mut self, unary: &Unary) {
-        self.resolve_expr(&unary.expr);
     }
 
     fn resolve_logical_expr(&mut self, logical: &Logical) {

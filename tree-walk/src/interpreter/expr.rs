@@ -16,7 +16,7 @@ impl Interpreter {
             Unary(u) => self.evaluate_unary_expression(u),
             Assign(a) => self.evaluate_assign(a),
             Call(c) => self.evaluate_call(c),
-            Get(g) => todo!(),
+            Get(g) => self.evaluate_get(g),
         }
     }
 
@@ -111,6 +111,19 @@ impl Interpreter {
                 .into(),
             })
             .into())
+        }
+    }
+
+    fn evaluate_get(&mut self, get: &Get) -> CFResult<RuntimeValue> {
+        let object = self.evaluate_expr(&get.object)?;
+
+        match object {
+            RuntimeValue::Object(instance) => instance.get(&get.property.name),
+            _ => Err(ControlFlow::RuntimeError(RuntimeError::TypeError(
+                TypeError {
+                    message: "only instances have properties".into(),
+                },
+            ))),
         }
     }
 }

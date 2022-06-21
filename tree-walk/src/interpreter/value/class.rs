@@ -1,4 +1,11 @@
-use std::{fmt::Display, rc::Rc};
+use std::fmt::Display;
+use std::rc::Rc;
+use std::{borrow::Borrow, collections::HashMap};
+
+use crate::interpreter::{
+    error::{RuntimeError, Undefined},
+    ControlFlow,
+};
 
 use super::{CFResult, Callable, RuntimeValue};
 
@@ -36,11 +43,26 @@ impl Display for Class {
 #[derive(Debug)]
 pub struct Instance {
     class: Rc<Class>,
+    properties: HashMap<String, RuntimeValue>,
 }
 
 impl Instance {
     fn new(class: Rc<Class>) -> Self {
-        Self { class }
+        Self {
+            class,
+            properties: HashMap::new(),
+        }
+    }
+
+    pub fn get(&self, property_name: &str) -> CFResult<RuntimeValue> {
+        self.properties
+            .get(property_name)
+            .cloned()
+            .ok_or(ControlFlow::RuntimeError(RuntimeError::Undefined(
+                Undefined {
+                    message: format!("undefined property {}", property_name).into(),
+                },
+            )))
     }
 }
 
