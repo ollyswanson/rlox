@@ -1,5 +1,5 @@
 use crate::ast::expr::{
-    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, UnOp, Unary, Var,
+    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, UnOp, Unary, Var,
 };
 use crate::ast::util::{AssocOp, Fixity};
 use crate::ast::Identifier;
@@ -62,16 +62,18 @@ impl<'a> Parser<'a> {
                 | AssocOp::Divide => {
                     Expr::Binary(Binary::new(span, op.to_bin_op().unwrap(), lhs, rhs))
                 }
-                AssocOp::Assign => {
-                    if let Expr::Var(var) = lhs {
+                AssocOp::Assign => match lhs {
+                    Expr::Var(var) => {
                         Expr::Assign(Assign::new(var.span.union(&rhs.span()), var.id, rhs))
-                    } else {
+                    }
+                    Expr::Get(get) => Expr::Set(Set::new(span, get.object, get.property, rhs)),
+                    _ => {
                         return Err(ParseError::InvalidAssignment {
                             span: lhs.span(),
                             message: format!("can't assign to {}", lhs).into(),
                         });
                     }
-                }
+                },
                 AssocOp::And | AssocOp::Or => {
                     Expr::Logical(Logical::new(span, op.to_logical_op().unwrap(), lhs, rhs))
                 }
@@ -186,6 +188,7 @@ impl<'a> Parser<'a> {
             let property = self.expect_identifier()?;
             expr = Expr::Get(Get::new(expr.span().union(&property.span), expr, property))
         }
+
         Ok(expr)
     }
 }
@@ -397,6 +400,29 @@ mod tests {
                 Identifier::new(Span::new(6, 9), "bar", 1),
             )),
             Identifier::new(Span::new(10, 13), "baz", 2),
+        ));
+
+        let mut parser = Parser::new(source);
+        let expr = parser.parse_expr().unwrap();
+
+        assert_eq!(expected, expr);
+    }
+
+    #[test]
+    fn parse_set() {
+        let source = "foo.bar.baz = 1";
+        let expected = Expr::Set(Set::new(
+            Span::new(0, 15),
+            Expr::Get(Get::new(
+                Span::new(0, 7),
+                Expr::Var(Var::new(
+                    Span::new(0, 3),
+                    Identifier::new(Span::new(0, 3), "foo", 0),
+                )),
+                Identifier::new(Span::new(4, 7), "bar", 1),
+            )),
+            Identifier::new(Span::new(8, 11), "baz", 2),
+            Expr::Literal(Literal::new(Span::new(14, 15), Value::Number(1.0))),
         ));
 
         let mut parser = Parser::new(source);

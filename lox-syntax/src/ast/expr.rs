@@ -56,6 +56,7 @@ pub enum Expr {
     Assign(Assign),
     Call(Call),
     Get(Get),
+    Set(Set),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -128,6 +129,14 @@ pub struct Get {
     pub property: Identifier,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Set {
+    pub span: Span,
+    pub object: Box<Expr>,
+    pub property: Identifier,
+    pub value: Box<Expr>,
+}
+
 impl Expr {
     pub fn span(&self) -> Span {
         use Expr::*;
@@ -142,6 +151,7 @@ impl Expr {
             Logical(l) => l.span,
             Call(c) => c.span,
             Get(g) => g.span,
+            Set(s) => s.span,
         }
     }
 }
@@ -253,6 +263,22 @@ impl Get {
     }
 }
 
+impl Set {
+    pub fn new(
+        span: Span,
+        object: impl Into<Box<Expr>>,
+        property: Identifier,
+        value: impl Into<Box<Expr>>,
+    ) -> Self {
+        Self {
+            span,
+            object: object.into(),
+            property,
+            value: value.into(),
+        }
+    }
+}
+
 // impl Display
 
 impl Display for UnOp {
@@ -356,6 +382,16 @@ impl Display for Get {
     }
 }
 
+impl Display for Set {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "(set {} {} {})",
+            self.object, self.property.name, self.value
+        )
+    }
+}
+
 impl Display for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Expr::*;
@@ -369,6 +405,7 @@ impl Display for Expr {
             Assign(a) => write!(f, "{}", a),
             Call(c) => write!(f, "{}", c),
             Get(g) => write!(f, "{}", g),
+            Set(s) => write!(f, "{}", s),
         }
     }
 }

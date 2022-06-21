@@ -17,6 +17,7 @@ impl Interpreter {
             Assign(a) => self.evaluate_assign(a),
             Call(c) => self.evaluate_call(c),
             Get(g) => self.evaluate_get(g),
+            Set(s) => todo!(),
         }
     }
 
