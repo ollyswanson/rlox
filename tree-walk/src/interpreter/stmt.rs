@@ -1,5 +1,5 @@
-use std::mem;
 use std::rc::Rc;
+use std::{collections::HashMap, mem};
 
 use lox_syntax::ast::stmt::{
     Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While,
@@ -97,9 +97,20 @@ impl Interpreter {
     }
 
     fn execute_class_decl(&mut self, class_decl: &ClassDecl) -> CFResult<()> {
+        let methods: HashMap<String, Rc<LoxFunction>> = class_decl
+            .methods
+            .iter()
+            .map(|mtd| {
+                (
+                    mtd.id.name.clone(),
+                    Rc::new(LoxFunction::new(mtd, self.environment.clone())),
+                )
+            })
+            .collect();
+
         self.environment.define(
             &class_decl.id.name,
-            RuntimeValue::Class(Rc::new(Class::new(&class_decl.id.name))),
+            RuntimeValue::Class(Rc::new(Class::new(&class_decl.id.name, methods))),
         );
 
         Ok(())

@@ -17,7 +17,7 @@ impl Interpreter {
             Assign(a) => self.evaluate_assign(a),
             Call(c) => self.evaluate_call(c),
             Get(g) => self.evaluate_get(g),
-            Set(s) => todo!(),
+            Set(s) => self.evaluate_set(s),
         }
     }
 
@@ -119,7 +119,23 @@ impl Interpreter {
         let object = self.evaluate_expr(&get.object)?;
 
         match object {
-            RuntimeValue::Object(instance) => instance.get(&get.property.name),
+            RuntimeValue::Object(instance) => instance.borrow().get(&get.property.name),
+            _ => Err(ControlFlow::RuntimeError(RuntimeError::TypeError(
+                TypeError {
+                    message: "only instances have properties".into(),
+                },
+            ))),
+        }
+    }
+
+    fn evaluate_set(&mut self, set: &Set) -> CFResult<RuntimeValue> {
+        let object = self.evaluate_expr(&set.object)?;
+
+        match object {
+            RuntimeValue::Object(instance) => {
+                let value = self.evaluate_expr(&set.value)?;
+                instance.borrow_mut().set(&set.property.name, value)
+            }
             _ => Err(ControlFlow::RuntimeError(RuntimeError::TypeError(
                 TypeError {
                     message: "only instances have properties".into(),

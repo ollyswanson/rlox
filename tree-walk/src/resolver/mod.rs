@@ -32,6 +32,7 @@ enum BindingState {
 enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 impl<'a> Resolver<'a> {

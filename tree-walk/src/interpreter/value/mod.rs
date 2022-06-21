@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
 
@@ -19,7 +20,7 @@ pub enum RuntimeValue {
     Boolean(bool),
     Function(Rc<dyn Callable>),
     Class(Rc<Class>),
-    Object(Rc<Instance>),
+    Object(Rc<RefCell<Instance>>),
 }
 
 impl RuntimeValue {
@@ -55,7 +56,7 @@ impl Display for RuntimeValue {
             Boolean(b) => write!(f, "{}", b),
             Function(fun) => write!(f, "{}", fun),
             Class(class) => write!(f, "{}", class),
-            Object(instance) => write!(f, "{}", instance),
+            Object(instance) => write!(f, "{}", instance.borrow()),
         }
     }
 }

@@ -1,4 +1,4 @@
-use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Logical, Var};
+use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Logical, Set, Var};
 
 use crate::resolver::error::ResolverError;
 use crate::resolver::BindingState;
@@ -17,7 +17,7 @@ impl Resolver<'_> {
             Expr::Logical(l) => self.resolve_logical_expr(l),
             Expr::Call(c) => self.resolve_call_expr(c),
             Expr::Get(g) => self.resolve_expr(&g.object),
-            Expr::Set(s) => todo!(),
+            Expr::Set(s) => self.resolve_set_expr(s),
         }
     }
 
@@ -52,5 +52,10 @@ impl Resolver<'_> {
     fn resolve_logical_expr(&mut self, logical: &Logical) {
         self.resolve_expr(&logical.lhs);
         self.resolve_expr(&logical.rhs);
+    }
+
+    fn resolve_set_expr(&mut self, set: &Set) {
+        self.resolve_expr(&set.object);
+        self.resolve_expr(&set.value);
     }
 }

@@ -102,15 +102,7 @@ impl<'a> Parser<'a> {
                     Identifier::new(span, name, self.increment()),
                 ));
 
-                let expr = match self.peek().kind {
-                    T::LeftParen => self.parse_call(expr)?,
-                    _ => expr,
-                };
-
-                match self.peek().kind {
-                    T::Dot => self.parse_get(expr),
-                    _ => Ok(expr),
-                }
+                self.parse_call_or_get(expr)
             }
             T::Minus | T::Bang => self.parse_unary(),
             T::LeftParen => self.parse_grouping(),
@@ -155,19 +147,33 @@ impl<'a> Parser<'a> {
         Ok(Expr::Grouping(Grouping::new(span, expr)))
     }
 
-    fn parse_call(&mut self, mut expr: Expr) -> PResult<Expr> {
-        let span = expr.span();
-
-        while self.matches(&[TokenKind::LeftParen]).is_some() {
-            let (right_span, args) = self.parse_arguments()?;
-            expr = Expr::Call(Call::new(span.union(&right_span), expr, args));
+    fn parse_call_or_get(&mut self, mut expr: Expr) -> PResult<Expr> {
+        use TokenKind as T;
+        loop {
+            match self.peek().kind {
+                T::LeftParen => {
+                    let (right_span, args) = self.parse_arguments()?;
+                    expr = Expr::Call(Call::new(expr.span().union(&right_span), expr, args));
+                }
+                T::Dot => {
+                    // consume dot
+                    self.bump();
+                    let property = self.expect_identifier()?;
+                    expr = Expr::Get(Get::new(expr.span().union(&property.span), expr, property))
+                }
+                _ => {
+                    break;
+                }
+            }
         }
-
         Ok(expr)
     }
 
     fn parse_arguments(&mut self) -> PResult<(Span, Vec<Expr>)> {
         use TokenKind::*;
+
+        // consume left paren
+        self.bump();
 
         let mut args = Vec::new();
         if !self.peek().kind.match_kind(&RightParen) {
@@ -181,15 +187,6 @@ impl<'a> Parser<'a> {
             .span;
 
         Ok((right_paren_span, args))
-    }
-
-    fn parse_get(&mut self, mut expr: Expr) -> PResult<Expr> {
-        while let Some(_dot) = self.matches(&[TokenKind::Dot]) {
-            let property = self.expect_identifier()?;
-            expr = Expr::Get(Get::new(expr.span().union(&property.span), expr, property))
-        }
-
-        Ok(expr)
     }
 }
 

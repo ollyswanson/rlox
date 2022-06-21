@@ -1,9 +1,11 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::rc::Rc;
-use std::{borrow::Borrow, collections::HashMap};
 
 use crate::interpreter::{
     error::{RuntimeError, Undefined},
+    value::function::LoxFunction,
     ControlFlow,
 };
 
@@ -12,11 +14,19 @@ use super::{CFResult, Callable, RuntimeValue};
 #[derive(Debug)]
 pub struct Class {
     name: String,
+    methods: HashMap<String, Rc<LoxFunction>>,
 }
 
 impl Class {
-    pub fn new(name: impl Into<String>) -> Self {
-        Self { name: name.into() }
+    pub fn new(name: impl Into<String>, methods: HashMap<String, Rc<LoxFunction>>) -> Self {
+        Self {
+            name: name.into(),
+            methods,
+        }
+    }
+
+    fn findMethod(&self, name: &str) -> Option<Rc<LoxFunction>> {
+        self.methods.get(name).cloned()
     }
 }
 
@@ -30,7 +40,9 @@ impl Callable for Class {
         _interpreter: &mut crate::Interpreter,
         _args: Vec<RuntimeValue>,
     ) -> CFResult<RuntimeValue> {
-        Ok(RuntimeValue::Object(Rc::new(Instance::new(self))))
+        Ok(RuntimeValue::Object(Rc::new(RefCell::new(Instance::new(
+            self,
+        )))))
     }
 }
 
@@ -55,14 +67,28 @@ impl Instance {
     }
 
     pub fn get(&self, property_name: &str) -> CFResult<RuntimeValue> {
-        self.properties
-            .get(property_name)
-            .cloned()
-            .ok_or(ControlFlow::RuntimeError(RuntimeError::Undefined(
-                Undefined {
+        if let Some(property) = self.properties.get(property_name).cloned() {
+            return Ok(property);
+        }
+
+        self.class
+            .findMethod(property_name)
+            .map(|mtd| RuntimeValue::Function(mtd as Rc<dyn Callable>))
+            .ok_or_else(|| {
+                ControlFlow::RuntimeError(RuntimeError::Undefined(Undefined {
                     message: format!("undefined property {}", property_name).into(),
-                },
-            )))
+                }))
+            })
+    }
+
+    pub fn set(
+        &mut self,
+        property_name: impl Into<String>,
+        value: RuntimeValue,
+    ) -> CFResult<RuntimeValue> {
+        self.properties.insert(property_name.into(), value.clone());
+
+        Ok(value)
     }
 }
 

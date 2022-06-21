@@ -44,6 +44,20 @@ impl Resolver<'_> {
     fn resolve_class_decl(&mut self, class_decl: &ClassDecl) {
         self.declare(&class_decl.id);
         self.define(&class_decl.id);
+
+        for method in class_decl.methods.iter() {
+            self.scoped_fn(
+                |this| {
+                    for param in method.params.iter() {
+                        this.declare(param);
+                        this.define(param);
+                    }
+
+                    this.resolve(&method.body);
+                },
+                FunctionType::Method,
+            )
+        }
     }
 
     fn resolve_expr_stmt(&mut self, expr_stmt: &ExprStmt) {
