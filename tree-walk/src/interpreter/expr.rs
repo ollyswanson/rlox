@@ -81,28 +81,33 @@ impl Interpreter {
     fn evaluate_call(&mut self, call: &Call) -> CFResult<RuntimeValue> {
         let callee = self.evaluate_expr(call.callee.as_ref())?;
 
-        if let RuntimeValue::Function(callee) = callee {
-            let args: Vec<RuntimeValue> = call
-                .args
-                .iter()
-                .map(|arg| self.evaluate_expr(arg))
-                .collect::<CFResult<_>>()?;
-            if callee.arity() == args.len() {
-                callee.call(self, args)
-            } else {
-                Err(RuntimeError::TypeError(TypeError {
-                    message: format!(
-                        "expected {} arguments but got {}",
-                        callee.arity(),
-                        args.len()
-                    )
-                    .into(),
+        let callee = match callee {
+            RuntimeValue::Function(callee) => callee,
+            RuntimeValue::Class(callee) => callee,
+            _ => {
+                return Err(RuntimeError::TypeError(TypeError {
+                    message: "can only call functions and classes".into(),
                 })
                 .into())
             }
+        };
+
+        let args: Vec<RuntimeValue> = call
+            .args
+            .iter()
+            .map(|arg| self.evaluate_expr(arg))
+            .collect::<CFResult<_>>()?;
+
+        if callee.arity() == args.len() {
+            callee.call(self, args)
         } else {
             Err(RuntimeError::TypeError(TypeError {
-                message: "can only call functions and classes".into(),
+                message: format!(
+                    "expected {} arguments but got {}",
+                    callee.arity(),
+                    args.len()
+                )
+                .into(),
             })
             .into())
         }

@@ -103,12 +103,12 @@ impl<'a> Resolver<'a> {
         self.end_scope();
     }
 
-    fn scoped_fn_decl<F>(&mut self, f: F)
+    fn scoped_fn<F>(&mut self, f: F, function_type: FunctionType)
     where
         F: FnOnce(&mut Self),
     {
         let restore = self.function_type;
-        self.function_type = FunctionType::Function;
+        self.function_type = function_type;
         self.scoped(f);
         self.function_type = restore;
     }

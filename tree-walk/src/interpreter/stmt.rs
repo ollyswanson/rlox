@@ -1,10 +1,12 @@
 use std::mem;
 use std::rc::Rc;
 
-use lox_syntax::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While};
+use lox_syntax::ast::stmt::{
+    Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While,
+};
 
-use crate::interpreter::environment::Environment;
 use crate::interpreter::ControlFlow;
+use crate::interpreter::{environment::Environment, value::class::Class};
 
 use super::value::function::LoxFunction;
 use super::value::RuntimeValue;
@@ -23,6 +25,7 @@ impl Interpreter {
             While(w) => self.execute_while_stmt(w),
             FunDecl(f) => self.execute_fun_decl(f),
             Return(r) => self.execute_return_stmt(r),
+            ClassDecl(c) => self.execute_class_decl(c),
         }
     }
 
@@ -91,6 +94,15 @@ impl Interpreter {
     fn execute_return_stmt(&mut self, return_stmt: &Return) -> CFResult<()> {
         let value = self.evaluate_expr(&return_stmt.expr)?;
         Err(ControlFlow::Return(value))
+    }
+
+    fn execute_class_decl(&mut self, class_decl: &ClassDecl) -> CFResult<()> {
+        self.environment.define(
+            &class_decl.id.name,
+            RuntimeValue::Class(Rc::new(Class::new(&class_decl.id.name))),
+        );
+
+        Ok(())
     }
 
     pub fn scoped_statement<F, T>(&mut self, f: F, environment: Environment) -> CFResult<T>

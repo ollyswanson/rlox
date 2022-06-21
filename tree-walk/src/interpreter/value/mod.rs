@@ -6,7 +6,10 @@ use lox_syntax::ast::expr::Value;
 use crate::interpreter::CFResult;
 use crate::Interpreter;
 
+pub mod class;
 pub mod function;
+
+use class::{Class, Instance};
 
 #[derive(Debug, Clone)]
 pub enum RuntimeValue {
@@ -15,6 +18,8 @@ pub enum RuntimeValue {
     Number(f64),
     Boolean(bool),
     Function(Rc<dyn Callable>),
+    Class(Rc<Class>),
+    Object(Rc<Instance>),
 }
 
 impl RuntimeValue {
@@ -49,6 +54,8 @@ impl Display for RuntimeValue {
             Number(n) => write!(f, "{}", n),
             Boolean(b) => write!(f, "{}", b),
             Function(fun) => write!(f, "{}", fun),
+            Class(class) => write!(f, "{}", class),
+            Object(instance) => write!(f, "{}", instance),
         }
     }
 }
@@ -56,7 +63,7 @@ impl Display for RuntimeValue {
 pub trait Callable: Debug + Display {
     fn arity(&self) -> usize;
     fn call(
-        &self,
+        self: Rc<Self>,
         interpreter: &mut Interpreter,
         args: Vec<RuntimeValue>,
     ) -> CFResult<RuntimeValue>;

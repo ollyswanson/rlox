@@ -1,5 +1,8 @@
-use std::fmt::{Display, Formatter};
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    fmt::{Display, Formatter},
+    rc::Rc,
+};
 
 use lox_syntax::ast::stmt::FunDecl;
 
@@ -17,7 +20,7 @@ impl Callable for Clock {
     }
 
     fn call(
-        &self,
+        self: Rc<Self>,
         _interpreter: &mut Interpreter,
         _args: Vec<RuntimeValue>,
     ) -> CFResult<RuntimeValue> {
@@ -57,7 +60,7 @@ impl Callable for LoxFunction {
     }
 
     fn call(
-        &self,
+        self: Rc<Self>,
         interpreter: &mut Interpreter,
         args: Vec<RuntimeValue>,
     ) -> CFResult<RuntimeValue> {

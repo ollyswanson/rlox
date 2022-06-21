@@ -1,4 +1,6 @@
-use lox_syntax::ast::stmt::{Block, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While};
+use lox_syntax::ast::stmt::{
+    Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While,
+};
 
 use super::{FunctionType, Resolver, ResolverError};
 
@@ -13,6 +15,7 @@ impl Resolver<'_> {
             Stmt::Print(p) => self.resolve_print_stmt(p),
             Stmt::If(i) => self.resolve_if_stmt(i),
             Stmt::Return(r) => self.resolve_return_stmt(r),
+            Stmt::ClassDecl(c) => self.resolve_class_decl(c),
         }
     }
 
@@ -25,14 +28,22 @@ impl Resolver<'_> {
     fn resolve_fun_decl(&mut self, fun_decl: &FunDecl) {
         self.declare(&fun_decl.id);
         self.define(&fun_decl.id);
-        self.scoped_fn_decl(|this| {
-            for param in fun_decl.params.iter() {
-                this.declare(param);
-                this.define(param);
-            }
+        self.scoped_fn(
+            |this| {
+                for param in fun_decl.params.iter() {
+                    this.declare(param);
+                    this.define(param);
+                }
 
-            this.resolve(&fun_decl.body);
-        });
+                this.resolve(&fun_decl.body);
+            },
+            FunctionType::Function,
+        );
+    }
+
+    fn resolve_class_decl(&mut self, class_decl: &ClassDecl) {
+        self.declare(&class_decl.id);
+        self.define(&class_decl.id);
     }
 
     fn resolve_expr_stmt(&mut self, expr_stmt: &ExprStmt) {
