@@ -31,7 +31,7 @@ impl Class {
         }
     }
 
-    fn find_method(&self, name: &str) -> Option<Rc<LoxFunction>> {
+    pub fn find_method(&self, name: &str) -> Option<Rc<LoxFunction>> {
         self.methods.get(name).cloned().or_else(|| {
             self.super_class
                 .as_ref()

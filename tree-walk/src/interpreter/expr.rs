@@ -1,6 +1,8 @@
+use std::rc::Rc;
+
 use lox_syntax::ast::expr::*;
 
-use crate::interpreter::error::{RuntimeError, TypeError};
+use crate::interpreter::error::{RuntimeError, TypeError, Undefined};
 use crate::interpreter::value::RuntimeValue;
 use crate::interpreter::{CFResult, ControlFlow, Interpreter};
 
@@ -19,6 +21,7 @@ impl Interpreter {
             Get(g) => self.evaluate_get(g),
             Set(s) => self.evaluate_set(s),
             This(t) => self.evaluate_this(t),
+            Super(s) => self.evaluate_super(s),
         }
     }
 
@@ -146,6 +149,32 @@ impl Interpreter {
                     message: "only instances have properties".into(),
                 },
             ))),
+        }
+    }
+
+    fn evaluate_super(&mut self, super_expr: &Super) -> CFResult<RuntimeValue> {
+        use RuntimeValue as RV;
+        let depth = self
+            .locals
+            .get(&super_expr.id.id)
+            .copied()
+            .expect("Resolution step statically guarantees the super lookup");
+        let super_class = self.environment.get_with_depth("super", depth);
+
+        // hacky based on knowing the distance to `this`
+        let this = self.environment.get_with_depth("this", depth - 1);
+
+        if let RV::Class(super_class) = super_class {
+            super_class
+                .find_method(&super_expr.method.name)
+                .map(|mtd| RV::Function(Rc::new(mtd.bind(this))))
+                .ok_or_else(|| {
+                    ControlFlow::RuntimeError(RuntimeError::Undefined(Undefined {
+                        message: format!("undefined property {}", super_expr.method.name).into(),
+                    }))
+                })
+        } else {
+            unreachable!()
         }
     }
 }

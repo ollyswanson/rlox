@@ -118,7 +118,7 @@ impl<'a> Parser<'a> {
                 let super_id = Identifier::new(super_span, "super", self.increment());
                 let method = self.expect_identifier()?;
 
-                Ok(Expr::Super(Super::new(
+                self.parse_call_or_get(Expr::Super(Super::new(
                     super_span.union(&method.span),
                     super_id,
                     method,

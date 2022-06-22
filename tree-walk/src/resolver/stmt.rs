@@ -54,6 +54,14 @@ impl Resolver<'_> {
             }
         }
 
+        if class_decl.super_class.is_some() {
+            self.begin_scope();
+            self.scopes
+                .last_mut()
+                .unwrap()
+                .insert("super".into(), super::BindingState::Defined);
+        }
+
         self.scoped(|this| {
             let restore = std::mem::replace(&mut this.class_type, ClassType::Class);
             // init "this"
@@ -82,7 +90,11 @@ impl Resolver<'_> {
                 )
             }
             this.class_type = restore;
-        })
+        });
+
+        if class_decl.super_class.is_some() {
+            self.end_scope();
+        }
     }
 
     fn resolve_expr_stmt(&mut self, expr_stmt: &ExprStmt) {

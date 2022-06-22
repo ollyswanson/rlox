@@ -16,6 +16,7 @@ impl Resolver<'_> {
             Expr::Get(g) => self.resolve_expr(&g.object),
             Expr::Set(s) => self.resolve_set_expr(s),
             Expr::This(t) => self.resolve_this_expr(t),
+            Expr::Super(s) => self.resolve_binding(&s.id),
         }
     }
 

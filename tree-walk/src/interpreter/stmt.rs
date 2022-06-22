@@ -121,6 +121,14 @@ impl Interpreter {
             })
             .transpose()?;
 
+        if let Some(ref super_class) = super_class {
+            let environment = Environment::from_enclosing(self.environment.clone());
+            self.environment = environment;
+
+            self.environment
+                .define("super", RuntimeValue::Class(super_class.clone()));
+        }
+
         let methods: HashMap<String, Rc<LoxFunction>> = class_decl
             .methods
             .iter()
@@ -135,6 +143,10 @@ impl Interpreter {
                 )
             })
             .collect();
+
+        if super_class.is_some() {
+            self.environment.exit_scope();
+        }
 
         self.environment.define(
             &class_decl.id.name,
