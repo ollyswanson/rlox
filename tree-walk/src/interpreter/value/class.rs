@@ -25,7 +25,7 @@ impl Class {
         }
     }
 
-    fn findMethod(&self, name: &str) -> Option<Rc<LoxFunction>> {
+    fn find_method(&self, name: &str) -> Option<Rc<LoxFunction>> {
         self.methods.get(name).cloned()
     }
 }
@@ -40,9 +40,7 @@ impl Callable for Class {
         _interpreter: &mut crate::Interpreter,
         _args: Vec<RuntimeValue>,
     ) -> CFResult<RuntimeValue> {
-        Ok(RuntimeValue::Object(Rc::new(RefCell::new(Instance::new(
-            self,
-        )))))
+        Ok(RuntimeValue::Object(Rc::new(Instance::new(self))))
     }
 }
 
@@ -55,25 +53,25 @@ impl Display for Class {
 #[derive(Debug)]
 pub struct Instance {
     class: Rc<Class>,
-    properties: HashMap<String, RuntimeValue>,
+    properties: RefCell<HashMap<String, RuntimeValue>>,
 }
 
 impl Instance {
     fn new(class: Rc<Class>) -> Self {
         Self {
             class,
-            properties: HashMap::new(),
+            properties: RefCell::new(HashMap::new()),
         }
     }
 
-    pub fn get(&self, property_name: &str) -> CFResult<RuntimeValue> {
-        if let Some(property) = self.properties.get(property_name).cloned() {
+    pub fn get(self: Rc<Self>, property_name: &str) -> CFResult<RuntimeValue> {
+        if let Some(property) = self.properties.borrow().get(property_name).cloned() {
             return Ok(property);
         }
 
         self.class
-            .findMethod(property_name)
-            .map(|mtd| RuntimeValue::Function(mtd as Rc<dyn Callable>))
+            .find_method(property_name)
+            .map(|mtd| RuntimeValue::Function(Rc::new(mtd.bind(RuntimeValue::Object(self)))))
             .ok_or_else(|| {
                 ControlFlow::RuntimeError(RuntimeError::Undefined(Undefined {
                     message: format!("undefined property {}", property_name).into(),
@@ -82,11 +80,13 @@ impl Instance {
     }
 
     pub fn set(
-        &mut self,
+        &self,
         property_name: impl Into<String>,
         value: RuntimeValue,
     ) -> CFResult<RuntimeValue> {
-        self.properties.insert(property_name.into(), value.clone());
+        self.properties
+            .borrow_mut()
+            .insert(property_name.into(), value.clone());
 
         Ok(value)
     }

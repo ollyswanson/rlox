@@ -18,6 +18,7 @@ impl Resolver<'_> {
             Expr::Call(c) => self.resolve_call_expr(c),
             Expr::Get(g) => self.resolve_expr(&g.object),
             Expr::Set(s) => self.resolve_set_expr(s),
+            Expr::This(t) => self.resolve_binding(&t.id),
         }
     }
 

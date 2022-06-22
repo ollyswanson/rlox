@@ -45,19 +45,27 @@ impl Resolver<'_> {
         self.declare(&class_decl.id);
         self.define(&class_decl.id);
 
-        for method in class_decl.methods.iter() {
-            self.scoped_fn(
-                |this| {
-                    for param in method.params.iter() {
-                        this.declare(param);
-                        this.define(param);
-                    }
+        self.scoped(|this| {
+            // init "this"
+            this.scopes
+                .last_mut()
+                .unwrap()
+                .insert("this".into(), super::BindingState::Defined);
 
-                    this.resolve(&method.body);
-                },
-                FunctionType::Method,
-            )
-        }
+            for method in class_decl.methods.iter() {
+                this.scoped_fn(
+                    |that| {
+                        for param in method.params.iter() {
+                            that.declare(param);
+                            that.define(param);
+                        }
+
+                        that.resolve(&method.body);
+                    },
+                    FunctionType::Method,
+                )
+            }
+        })
     }
 
     fn resolve_expr_stmt(&mut self, expr_stmt: &ExprStmt) {

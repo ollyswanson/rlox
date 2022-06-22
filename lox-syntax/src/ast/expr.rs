@@ -57,6 +57,7 @@ pub enum Expr {
     Call(Call),
     Get(Get),
     Set(Set),
+    This(This),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -137,6 +138,12 @@ pub struct Set {
     pub value: Box<Expr>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct This {
+    pub span: Span,
+    pub id: Identifier,
+}
+
 impl Expr {
     pub fn span(&self) -> Span {
         use Expr::*;
@@ -152,6 +159,7 @@ impl Expr {
             Call(c) => c.span,
             Get(g) => g.span,
             Set(s) => s.span,
+            This(t) => t.span,
         }
     }
 }
@@ -279,6 +287,15 @@ impl Set {
     }
 }
 
+impl This {
+    pub fn new(span: Span, identifier: Identifier) -> Self {
+        Self {
+            span,
+            id: identifier,
+        }
+    }
+}
+
 // impl Display
 
 impl Display for UnOp {
@@ -392,6 +409,12 @@ impl Display for Set {
     }
 }
 
+impl Display for This {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("this")
+    }
+}
+
 impl Display for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Expr::*;
@@ -406,6 +429,7 @@ impl Display for Expr {
             Call(c) => write!(f, "{}", c),
             Get(g) => write!(f, "{}", g),
             Set(s) => write!(f, "{}", s),
+            This(t) => write!(f, "{}", t),
         }
     }
 }

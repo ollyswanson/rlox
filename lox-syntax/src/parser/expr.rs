@@ -1,5 +1,5 @@
 use crate::ast::expr::{
-    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, UnOp, Unary, Var,
+    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, This, UnOp, Unary, Var,
 };
 use crate::ast::util::{AssocOp, Fixity};
 use crate::ast::Identifier;
@@ -104,6 +104,14 @@ impl<'a> Parser<'a> {
 
                 self.parse_call_or_get(expr)
             }
+            T::This => {
+                let this = self.bump();
+                let expr = Expr::This(This::new(
+                    this.span,
+                    Identifier::new(this.span, "this", self.increment()),
+                ));
+                self.parse_call_or_get(expr)
+            }
             T::Minus | T::Bang => self.parse_unary(),
             T::LeftParen => self.parse_grouping(),
             T::Error(error) => Err(ParseError::ScanError { error, span }),
@@ -156,8 +164,7 @@ impl<'a> Parser<'a> {
                     expr = Expr::Call(Call::new(expr.span().union(&right_span), expr, args));
                 }
                 T::Dot => {
-                    // consume dot
-                    self.bump();
+                    self.bump(); // consume dot
                     let property = self.expect_identifier()?;
                     expr = Expr::Get(Get::new(expr.span().union(&property.span), expr, property))
                 }
@@ -172,8 +179,7 @@ impl<'a> Parser<'a> {
     fn parse_arguments(&mut self) -> PResult<(Span, Vec<Expr>)> {
         use TokenKind::*;
 
-        // consume left paren
-        self.bump();
+        self.bump(); // consume left paren
 
         let mut args = Vec::new();
         if !self.peek().kind.match_kind(&RightParen) {

@@ -52,6 +52,13 @@ impl LoxFunction {
             closure,
         }
     }
+
+    /// Binds `value` to a new inner scope and returns a new instance of the function
+    pub fn bind(&self, value: RuntimeValue) -> Self {
+        let mut bindings = Environment::from_enclosing(self.closure.clone());
+        bindings.define("this", value);
+        Self::new(&self.decl, bindings)
+    }
 }
 
 impl Callable for LoxFunction {

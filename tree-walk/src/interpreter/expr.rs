@@ -18,11 +18,16 @@ impl Interpreter {
             Call(c) => self.evaluate_call(c),
             Get(g) => self.evaluate_get(g),
             Set(s) => self.evaluate_set(s),
+            This(t) => self.evaluate_this(t),
         }
     }
 
     fn evaluate_var_expr(&self, var_expr: &Var) -> CFResult<RuntimeValue> {
         self.get_variable(&var_expr.id)
+    }
+
+    fn evaluate_this(&self, this_expr: &This) -> CFResult<RuntimeValue> {
+        self.get_variable(&this_expr.id)
     }
 
     fn evaluate_unary_expression(&mut self, unary: &Unary) -> CFResult<RuntimeValue> {
@@ -119,7 +124,7 @@ impl Interpreter {
         let object = self.evaluate_expr(&get.object)?;
 
         match object {
-            RuntimeValue::Object(instance) => instance.borrow().get(&get.property.name),
+            RuntimeValue::Object(instance) => instance.get(&get.property.name),
             _ => Err(ControlFlow::RuntimeError(RuntimeError::TypeError(
                 TypeError {
                     message: "only instances have properties".into(),
@@ -134,7 +139,7 @@ impl Interpreter {
         match object {
             RuntimeValue::Object(instance) => {
                 let value = self.evaluate_expr(&set.value)?;
-                instance.borrow_mut().set(&set.property.name, value)
+                instance.set(&set.property.name, value)
             }
             _ => Err(ControlFlow::RuntimeError(RuntimeError::TypeError(
                 TypeError {
