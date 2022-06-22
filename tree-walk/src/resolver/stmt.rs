@@ -2,7 +2,7 @@ use lox_syntax::ast::stmt::{
     Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While,
 };
 
-use super::{FunctionType, Resolver, ResolverError};
+use super::{ClassType, FunctionType, Resolver, ResolverError};
 
 impl Resolver<'_> {
     pub(super) fn resolve_stmt(&mut self, stmt: &Stmt) {
@@ -46,6 +46,7 @@ impl Resolver<'_> {
         self.define(&class_decl.id);
 
         self.scoped(|this| {
+            let restore = std::mem::replace(&mut this.class_type, ClassType::Class);
             // init "this"
             this.scopes
                 .last_mut()
@@ -65,6 +66,7 @@ impl Resolver<'_> {
                     FunctionType::Method,
                 )
             }
+            this.class_type = restore;
         })
     }
 

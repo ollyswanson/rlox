@@ -1,9 +1,6 @@
-use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Logical, Set, Var};
+use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Logical, Set, This, Var};
 
-use crate::resolver::error::ResolverError;
-use crate::resolver::BindingState;
-
-use super::Resolver;
+use super::{BindingState, ClassType, Resolver, ResolverError};
 
 impl Resolver<'_> {
     pub(super) fn resolve_expr(&mut self, expr: &Expr) {
@@ -18,7 +15,7 @@ impl Resolver<'_> {
             Expr::Call(c) => self.resolve_call_expr(c),
             Expr::Get(g) => self.resolve_expr(&g.object),
             Expr::Set(s) => self.resolve_set_expr(s),
-            Expr::This(t) => self.resolve_binding(&t.id),
+            Expr::This(t) => self.resolve_this_expr(t),
         }
     }
 
@@ -30,6 +27,14 @@ impl Resolver<'_> {
                 self.error(ResolverError::InitializeFromSelf { span: var.span })
             }
             _ => self.resolve_binding(&var.id),
+        }
+    }
+
+    fn resolve_this_expr(&mut self, this: &This) {
+        if matches!(self.class_type, ClassType::Class) {
+            self.resolve_binding(&this.id);
+        } else {
+            self.error(ResolverError::ThisOutsideClass { span: this.span });
         }
     }
 

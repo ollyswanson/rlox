@@ -8,6 +8,7 @@ pub enum ResolverError {
     AlreadyDeclared { span: Span },
     Undeclared { span: Span, message: String },
     ReturnOutsideFn { span: Span },
+    ThisOutsideClass { span: Span },
 }
 
 impl Display for ResolverError {
@@ -19,6 +20,7 @@ impl Display for ResolverError {
             AlreadyDeclared { .. } => f.write_str("variable has already been declared"),
             Undeclared { message, .. } => f.write_str(message),
             ReturnOutsideFn { .. } => f.write_str("can't return outside of function body"),
+            ThisOutsideClass { .. } => f.write_str("can't use `this` outside of a class"),
         }
     }
 }

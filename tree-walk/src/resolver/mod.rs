@@ -20,6 +20,7 @@ pub struct Resolver<'a> {
     // makes sense.
     diagnostics: Vec<ResolverError>,
     function_type: FunctionType,
+    class_type: ClassType,
 }
 
 #[derive(Debug)]
@@ -35,6 +36,12 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum ClassType {
+    None,
+    Class,
+}
+
 impl<'a> Resolver<'a> {
     pub fn new(interpreter: &'a mut Interpreter) -> Self {
         Self {
@@ -42,6 +49,7 @@ impl<'a> Resolver<'a> {
             scopes: Vec::new(),
             diagnostics: Vec::new(),
             function_type: FunctionType::None,
+            class_type: ClassType::None,
         }
     }
 
