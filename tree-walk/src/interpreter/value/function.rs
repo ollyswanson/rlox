@@ -39,17 +39,34 @@ impl Display for Clock {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum LoxFunctionType {
+    Init,
+    Function,
+}
+
+impl From<&str> for LoxFunctionType {
+    fn from(s: &str) -> Self {
+        match s {
+            "init" => Self::Init,
+            _ => Self::Function,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct LoxFunction {
     decl: FunDecl,
     closure: Environment,
+    function_type: LoxFunctionType,
 }
 
 impl LoxFunction {
-    pub fn new(decl: &FunDecl, closure: Environment) -> Self {
+    pub fn new(decl: &FunDecl, closure: Environment, function_type: LoxFunctionType) -> Self {
         Self {
             decl: decl.clone(),
             closure,
+            function_type,
         }
     }
 
@@ -57,7 +74,7 @@ impl LoxFunction {
     pub fn bind(&self, value: RuntimeValue) -> Self {
         let mut bindings = Environment::from_enclosing(self.closure.clone());
         bindings.define("this", value);
-        Self::new(&self.decl, bindings)
+        Self::new(&self.decl, bindings, self.function_type)
     }
 }
 
@@ -86,7 +103,14 @@ impl Callable for LoxFunction {
                         Err(ControlFlow::Return(v)) => return Ok(v),
                     }
                 }
-                Ok(RuntimeValue::Nil)
+
+                // For simplicity's sake we make sure that init methods always return the related
+                // instance
+                match self.function_type {
+                    // init methods will always have a reference to "this" therefore we can unwrap
+                    LoxFunctionType::Init => Ok(self.closure.get("this").unwrap()),
+                    _ => Ok(RuntimeValue::Nil),
+                }
             },
             environment,
         )

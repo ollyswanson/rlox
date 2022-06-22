@@ -5,8 +5,8 @@ use lox_syntax::ast::stmt::{
     Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While,
 };
 
-use crate::interpreter::ControlFlow;
 use crate::interpreter::{environment::Environment, value::class::Class};
+use crate::interpreter::{value::function::LoxFunctionType, ControlFlow};
 
 use super::value::function::LoxFunction;
 use super::value::RuntimeValue;
@@ -86,6 +86,7 @@ impl Interpreter {
             RuntimeValue::Function(Rc::new(LoxFunction::new(
                 fun_decl,
                 self.environment.clone(),
+                LoxFunctionType::Function,
             ))),
         );
         Ok(())
@@ -103,7 +104,11 @@ impl Interpreter {
             .map(|mtd| {
                 (
                     mtd.id.name.clone(),
-                    Rc::new(LoxFunction::new(mtd, self.environment.clone())),
+                    Rc::new(LoxFunction::new(
+                        mtd,
+                        self.environment.clone(),
+                        mtd.id.name.as_str().into(),
+                    )),
                 )
             })
             .collect();

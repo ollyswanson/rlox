@@ -32,15 +32,27 @@ impl Class {
 
 impl Callable for Class {
     fn arity(&self) -> usize {
-        0
+        if let Some(init) = self.find_method("init") {
+            init.arity()
+        } else {
+            0
+        }
     }
 
     fn call(
         self: Rc<Self>,
-        _interpreter: &mut crate::Interpreter,
-        _args: Vec<RuntimeValue>,
+        interpreter: &mut crate::Interpreter,
+        args: Vec<RuntimeValue>,
     ) -> CFResult<RuntimeValue> {
-        Ok(RuntimeValue::Object(Rc::new(Instance::new(self))))
+        // construct instance from class
+        let instance = RuntimeValue::Object(Rc::new(Instance::new(self.clone())));
+
+        // if initializer "init" exists then bind the instance and call it.
+        if let Some(initializer) = self.find_method("init") {
+            Rc::new(initializer.bind(instance.clone())).call(interpreter, args)?;
+        }
+
+        Ok(instance)
     }
 }
 
