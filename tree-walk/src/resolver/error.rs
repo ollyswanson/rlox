@@ -10,6 +10,7 @@ pub enum ResolverError {
     ReturnOutsideFn { span: Span },
     ThisOutsideClass { span: Span },
     ReturnValueFromInit { span: Span },
+    InheritFromSelf { span: Span },
 }
 
 impl Display for ResolverError {
@@ -23,6 +24,7 @@ impl Display for ResolverError {
             ReturnOutsideFn { .. } => f.write_str("can't return outside of function body"),
             ThisOutsideClass { .. } => f.write_str("can't use `this` outside of a class"),
             ReturnValueFromInit { .. } => f.write_str("can't return a value inside `init` method"),
+            InheritFromSelf { .. } => f.write_str("a class can't inherit from itself"),
         }
     }
 }

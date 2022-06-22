@@ -111,6 +111,12 @@ impl<'a> Parser<'a> {
         let start_span = self.bump().span;
         let id = self.expect_identifier()?;
 
+        let super_class = if self.matches(&[TokenKind::Less]).is_some() {
+            Some(self.expect_identifier()?)
+        } else {
+            None
+        };
+
         self.expect(TokenKind::LeftBrace, "expect '{' before class body".into())?;
         let mut methods: Vec<FunDecl> = Vec::new();
 
@@ -125,6 +131,7 @@ impl<'a> Parser<'a> {
         Ok(Stmt::ClassDecl(ClassDecl::new(
             start_span.union(&end_span),
             id,
+            super_class,
             methods,
         )))
     }
@@ -438,6 +445,7 @@ mod tests {
         let expected = Stmt::ClassDecl(ClassDecl::new(
             Span::new(0, 33),
             Identifier::new(Span::new(6, 9), "Foo", 0),
+            None,
             vec![FunDecl::new(
                 Span::new(12, 31),
                 Identifier::new(Span::new(12, 15), "one", 1),

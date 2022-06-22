@@ -15,18 +15,28 @@ use super::{CFResult, Callable, RuntimeValue};
 pub struct Class {
     name: String,
     methods: HashMap<String, Rc<LoxFunction>>,
+    super_class: Option<Rc<Class>>,
 }
 
 impl Class {
-    pub fn new(name: impl Into<String>, methods: HashMap<String, Rc<LoxFunction>>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        methods: HashMap<String, Rc<LoxFunction>>,
+        super_class: Option<Rc<Class>>,
+    ) -> Self {
         Self {
             name: name.into(),
             methods,
+            super_class,
         }
     }
 
     fn find_method(&self, name: &str) -> Option<Rc<LoxFunction>> {
-        self.methods.get(name).cloned()
+        self.methods.get(name).cloned().or_else(|| {
+            self.super_class
+                .as_ref()
+                .and_then(|super_class| super_class.find_method(name))
+        })
     }
 }
 

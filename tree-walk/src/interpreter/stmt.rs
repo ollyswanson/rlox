@@ -5,7 +5,11 @@ use lox_syntax::ast::stmt::{
     Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While,
 };
 
-use crate::interpreter::{environment::Environment, value::class::Class};
+use crate::interpreter::{
+    environment::Environment,
+    error::{RuntimeError, TypeError},
+    value::class::Class,
+};
 use crate::interpreter::{value::function::LoxFunctionType, ControlFlow};
 
 use super::value::function::LoxFunction;
@@ -98,6 +102,25 @@ impl Interpreter {
     }
 
     fn execute_class_decl(&mut self, class_decl: &ClassDecl) -> CFResult<()> {
+        // This approach to retrieving the super class creates a requirement that
+        // the super class must have been defined BEFORE the subclass, i.e. the class_decl must
+        // have already been interpreted.
+        let super_class = class_decl
+            .super_class
+            .as_ref()
+            .map(|super_class| {
+                let super_class = self.get_variable(super_class)?;
+                match super_class {
+                    RuntimeValue::Class(class) => Ok(class),
+                    _ => Err(ControlFlow::RuntimeError(RuntimeError::TypeError(
+                        TypeError {
+                            message: "superclass must be a class".into(),
+                        },
+                    ))),
+                }
+            })
+            .transpose()?;
+
         let methods: HashMap<String, Rc<LoxFunction>> = class_decl
             .methods
             .iter()
@@ -115,7 +138,11 @@ impl Interpreter {
 
         self.environment.define(
             &class_decl.id.name,
-            RuntimeValue::Class(Rc::new(Class::new(&class_decl.id.name, methods))),
+            RuntimeValue::Class(Rc::new(Class::new(
+                &class_decl.id.name,
+                methods,
+                super_class,
+            ))),
         );
 
         Ok(())

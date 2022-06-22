@@ -46,6 +46,14 @@ impl Resolver<'_> {
         self.declare(&class_decl.id);
         self.define(&class_decl.id);
 
+        if let Some(ref super_class) = class_decl.super_class {
+            if super_class.name == class_decl.id.name {
+                self.error(ResolverError::InheritFromSelf {
+                    span: super_class.span,
+                });
+            }
+        }
+
         self.scoped(|this| {
             let restore = std::mem::replace(&mut this.class_type, ClassType::Class);
             // init "this"

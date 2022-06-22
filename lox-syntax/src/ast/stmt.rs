@@ -74,6 +74,7 @@ pub struct Return {
 pub struct ClassDecl {
     pub span: Span,
     pub id: Identifier,
+    pub super_class: Option<Identifier>,
     pub methods: Vec<FunDecl>,
 }
 
@@ -161,7 +162,17 @@ impl Return {
 }
 
 impl ClassDecl {
-    pub fn new(span: Span, id: Identifier, methods: Vec<FunDecl>) -> Self {
-        Self { span, id, methods }
+    pub fn new(
+        span: Span,
+        id: Identifier,
+        super_class: Option<Identifier>,
+        methods: Vec<FunDecl>,
+    ) -> Self {
+        Self {
+            span,
+            id,
+            super_class,
+            methods,
+        }
     }
 }
