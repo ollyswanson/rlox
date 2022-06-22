@@ -1,16 +1,38 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    borrow::Cow,
+    fmt::{Display, Formatter},
+};
 
 use lox_syntax::span::Span;
 
 #[derive(Debug)]
 pub enum ResolverError {
-    InitializeFromSelf { span: Span },
-    AlreadyDeclared { span: Span },
-    Undeclared { span: Span, message: String },
-    ReturnOutsideFn { span: Span },
-    ThisOutsideClass { span: Span },
-    ReturnValueFromInit { span: Span },
-    InheritFromSelf { span: Span },
+    InitializeFromSelf {
+        span: Span,
+    },
+    AlreadyDeclared {
+        span: Span,
+    },
+    Undeclared {
+        span: Span,
+        message: String,
+    },
+    ReturnOutsideFn {
+        span: Span,
+    },
+    ThisOutsideClass {
+        span: Span,
+    },
+    ReturnValueFromInit {
+        span: Span,
+    },
+    InheritFromSelf {
+        span: Span,
+    },
+    InvalidSuper {
+        span: Span,
+        message: Cow<'static, str>,
+    },
 }
 
 impl Display for ResolverError {
@@ -25,6 +47,7 @@ impl Display for ResolverError {
             ThisOutsideClass { .. } => f.write_str("can't use `this` outside of a class"),
             ReturnValueFromInit { .. } => f.write_str("can't return a value inside `init` method"),
             InheritFromSelf { .. } => f.write_str("a class can't inherit from itself"),
+            InvalidSuper { message, .. } => f.write_str(message),
         }
     }
 }

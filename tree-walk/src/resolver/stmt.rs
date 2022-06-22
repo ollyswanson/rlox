@@ -54,16 +54,19 @@ impl Resolver<'_> {
             }
         }
 
-        if class_decl.super_class.is_some() {
+        let class_type = if class_decl.super_class.is_some() {
             self.begin_scope();
             self.scopes
                 .last_mut()
                 .unwrap()
                 .insert("super".into(), super::BindingState::Defined);
-        }
+            ClassType::SubClass
+        } else {
+            ClassType::Class
+        };
 
         self.scoped(|this| {
-            let restore = std::mem::replace(&mut this.class_type, ClassType::Class);
+            let restore = std::mem::replace(&mut this.class_type, class_type);
             // init "this"
             this.scopes
                 .last_mut()

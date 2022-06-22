@@ -41,6 +41,7 @@ enum FunctionType {
 enum ClassType {
     None,
     Class,
+    SubClass,
 }
 
 impl<'a> Resolver<'a> {

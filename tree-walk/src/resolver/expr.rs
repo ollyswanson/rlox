@@ -1,4 +1,4 @@
-use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Logical, Set, This, Var};
+use lox_syntax::ast::expr::{Assign, Binary, Call, Expr, Logical, Set, Super, This, Var};
 
 use super::{BindingState, ClassType, Resolver, ResolverError};
 
@@ -16,7 +16,7 @@ impl Resolver<'_> {
             Expr::Get(g) => self.resolve_expr(&g.object),
             Expr::Set(s) => self.resolve_set_expr(s),
             Expr::This(t) => self.resolve_this_expr(t),
-            Expr::Super(s) => self.resolve_binding(&s.id),
+            Expr::Super(s) => self.resolve_super_expr(s),
         }
     }
 
@@ -64,5 +64,25 @@ impl Resolver<'_> {
     fn resolve_set_expr(&mut self, set: &Set) {
         self.resolve_expr(&set.object);
         self.resolve_expr(&set.value);
+    }
+
+    fn resolve_super_expr(&mut self, super_expr: &Super) {
+        match self.class_type {
+            ClassType::None => {
+                self.error(ResolverError::InvalidSuper {
+                    span: super_expr.span,
+                    message: "can't user 'super' outside of a class".into(),
+                });
+            }
+            ClassType::Class => {
+                self.error(ResolverError::InvalidSuper {
+                    span: super_expr.span,
+                    message: "can't user 'super' in a class with no superclass".into(),
+                });
+            }
+            _ => {}
+        }
+
+        self.resolve_binding(&super_expr.id);
     }
 }
