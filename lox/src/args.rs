@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 
 #[derive(Debug, Parser)]
@@ -10,7 +12,7 @@ use clap::Parser;
 )]
 pub struct Args {
     /// Script to run
-    pub script: Option<String>,
+    pub script: Option<PathBuf>,
 }
 
 pub fn get_args() -> Args {
