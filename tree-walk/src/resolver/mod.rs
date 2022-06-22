@@ -34,6 +34,7 @@ enum FunctionType {
     None,
     Function,
     Method,
+    Initializer,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

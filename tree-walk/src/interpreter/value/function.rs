@@ -41,14 +41,14 @@ impl Display for Clock {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum LoxFunctionType {
-    Init,
+    Initializer,
     Function,
 }
 
 impl From<&str> for LoxFunctionType {
     fn from(s: &str) -> Self {
         match s {
-            "init" => Self::Init,
+            "init" => Self::Initializer,
             _ => Self::Function,
         }
     }
@@ -108,7 +108,7 @@ impl Callable for LoxFunction {
                 // instance
                 match self.function_type {
                     // init methods will always have a reference to "this" therefore we can unwrap
-                    LoxFunctionType::Init => Ok(self.closure.get("this").unwrap()),
+                    LoxFunctionType::Initializer => Ok(self.closure.get("this").unwrap()),
                     _ => Ok(RuntimeValue::Nil),
                 }
             },

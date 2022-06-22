@@ -1,5 +1,6 @@
-use lox_syntax::ast::stmt::{
-    Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While,
+use lox_syntax::ast::{
+    expr::{Expr, Literal, Value},
+    stmt::{Block, ClassDecl, ExprStmt, FunDecl, If, Print, Return, Stmt, Var, While},
 };
 
 use super::{ClassType, FunctionType, Resolver, ResolverError};
@@ -54,6 +55,12 @@ impl Resolver<'_> {
                 .insert("this".into(), super::BindingState::Defined);
 
             for method in class_decl.methods.iter() {
+                let function_type = if method.id.name == "init" {
+                    FunctionType::Initializer
+                } else {
+                    FunctionType::Method
+                };
+
                 this.scoped_fn(
                     |that| {
                         for param in method.params.iter() {
@@ -63,7 +70,7 @@ impl Resolver<'_> {
 
                         that.resolve(&method.body);
                     },
-                    FunctionType::Method,
+                    function_type,
                 )
             }
             this.class_type = restore;
@@ -87,10 +94,26 @@ impl Resolver<'_> {
     }
 
     fn resolve_return_stmt(&mut self, return_stmt: &Return) {
-        if self.function_type == FunctionType::None {
-            self.error(ResolverError::ReturnOutsideFn {
-                span: return_stmt.span,
-            });
+        match self.function_type {
+            FunctionType::None => {
+                self.error(ResolverError::ReturnOutsideFn {
+                    span: return_stmt.span,
+                });
+            }
+            FunctionType::Initializer => {
+                if !matches!(
+                    return_stmt.expr,
+                    Expr::Literal(Literal {
+                        value: Value::Nil,
+                        ..
+                    }),
+                ) {
+                    self.error(ResolverError::ReturnValueFromInit {
+                        span: return_stmt.span,
+                    });
+                }
+            }
+            _ => {}
         }
         self.resolve_expr(&return_stmt.expr);
     }

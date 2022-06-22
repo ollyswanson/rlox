@@ -9,6 +9,7 @@ pub enum ResolverError {
     Undeclared { span: Span, message: String },
     ReturnOutsideFn { span: Span },
     ThisOutsideClass { span: Span },
+    ReturnValueFromInit { span: Span },
 }
 
 impl Display for ResolverError {
@@ -21,6 +22,7 @@ impl Display for ResolverError {
             Undeclared { message, .. } => f.write_str(message),
             ReturnOutsideFn { .. } => f.write_str("can't return outside of function body"),
             ThisOutsideClass { .. } => f.write_str("can't use `this` outside of a class"),
+            ReturnValueFromInit { .. } => f.write_str("can't return a value inside `init` method"),
         }
     }
 }
