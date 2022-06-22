@@ -1,5 +1,5 @@
 use crate::ast::expr::{
-    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, This, UnOp, Unary, Var,
+    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, Super, This, UnOp, Unary, Var,
 };
 use crate::ast::util::{AssocOp, Fixity};
 use crate::ast::Identifier;
@@ -111,6 +111,18 @@ impl<'a> Parser<'a> {
                     Identifier::new(this.span, "this", self.increment()),
                 ));
                 self.parse_call_or_get(expr)
+            }
+            T::Super => {
+                let super_span = self.bump().span;
+                self.expect(TokenKind::Dot, "expect '.' after super".into())?;
+                let super_id = Identifier::new(super_span, "super", self.increment());
+                let method = self.expect_identifier()?;
+
+                Ok(Expr::Super(Super::new(
+                    super_span.union(&method.span),
+                    super_id,
+                    method,
+                )))
             }
             T::Minus | T::Bang => self.parse_unary(),
             T::LeftParen => self.parse_grouping(),
@@ -426,6 +438,21 @@ mod tests {
             )),
             Identifier::new(Span::new(8, 11), "baz", 2),
             Expr::Literal(Literal::new(Span::new(14, 15), Value::Number(1.0))),
+        ));
+
+        let mut parser = Parser::new(source);
+        let expr = parser.parse_expr().unwrap();
+
+        assert_eq!(expected, expr);
+    }
+
+    #[test]
+    fn parse_super() {
+        let source = "super.foo";
+        let expected = Expr::Super(Super::new(
+            Span::new(0, 9),
+            Identifier::new(Span::new(0, 5), "super", 0),
+            Identifier::new(Span::new(6, 9), "foo", 1),
         ));
 
         let mut parser = Parser::new(source);

@@ -58,6 +58,7 @@ pub enum Expr {
     Get(Get),
     Set(Set),
     This(This),
+    Super(Super),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -144,6 +145,13 @@ pub struct This {
     pub id: Identifier,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Super {
+    pub span: Span,
+    pub id: Identifier,
+    pub method: Identifier,
+}
+
 impl Expr {
     pub fn span(&self) -> Span {
         use Expr::*;
@@ -160,6 +168,7 @@ impl Expr {
             Get(g) => g.span,
             Set(s) => s.span,
             This(t) => t.span,
+            Super(s) => s.span,
         }
     }
 }
@@ -296,6 +305,12 @@ impl This {
     }
 }
 
+impl Super {
+    pub fn new(span: Span, id: Identifier, method: Identifier) -> Self {
+        Self { span, id, method }
+    }
+}
+
 // impl Display
 
 impl Display for UnOp {
@@ -415,6 +430,12 @@ impl Display for This {
     }
 }
 
+impl Display for Super {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(super {})", self.method.name)
+    }
+}
+
 impl Display for Expr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         use Expr::*;
@@ -430,6 +451,7 @@ impl Display for Expr {
             Get(g) => write!(f, "{}", g),
             Set(s) => write!(f, "{}", s),
             This(t) => write!(f, "{}", t),
+            Super(s) => write!(f, "{}", s),
         }
     }
 }
