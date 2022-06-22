@@ -100,7 +100,14 @@ impl Callable for LoxFunction {
                     match this.execute_stmt(stmt) {
                         Ok(_) => {}
                         Err(e @ ControlFlow::RuntimeError(_)) => return Err(e),
-                        Err(ControlFlow::Return(v)) => return Ok(v),
+                        Err(ControlFlow::Return(v)) => {
+                            return match self.function_type {
+                                LoxFunctionType::Function => Ok(v),
+                                LoxFunctionType::Initializer => {
+                                    Ok(self.closure.get("this").unwrap())
+                                }
+                            }
+                        }
                     }
                 }
 
