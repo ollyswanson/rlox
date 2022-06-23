@@ -13,6 +13,10 @@ use clap::Parser;
 pub struct Args {
     /// Script to run
     pub script: Option<PathBuf>,
+
+    /// Run tree-walk interpreter
+    #[clap(short, long)]
+    pub tree_walk: bool,
 }
 
 pub fn get_args() -> Args {

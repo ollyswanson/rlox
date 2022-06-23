@@ -3,7 +3,8 @@
 members = [
     "lox-syntax",
     "lox",
-    "tree-walk"
+    "tree-walk",
+    "bytecode"
 ]
 
 [profile.release]

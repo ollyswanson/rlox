@@ -1,11 +1,12 @@
+use crate::bytecode;
 use crate::tree_walk;
 
 use crate::args::Args;
 
 pub fn run_lox(args: Args) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(path) = args.script {
-        tree_walk::run_source(&path)
-    } else {
-        tree_walk::run_repl()
+    match (args.tree_walk, args.script) {
+        (true, Some(path)) => tree_walk::run_source(&path),
+        (true, None) => tree_walk::run_repl(),
+        (false, _) => bytecode::run(),
     }
 }
