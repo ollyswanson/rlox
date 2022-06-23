@@ -24,7 +24,14 @@ pub struct Undefined {
 
 impl Display for RuntimeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            RuntimeError::TypeError(TypeError { message }) => f.write_str(message),
+            RuntimeError::DivisionByZero => f.write_str("division by zero"),
+            RuntimeError::Undefined(Undefined { message }) => f.write_str(message),
+            RuntimeError::ReturnOutsideFunction => {
+                f.write_str("return must be used within a function")
+            }
+        }
     }
 }
 

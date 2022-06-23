@@ -1,5 +1,8 @@
-use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
+use std::{
+    fmt::{Debug, Display, Formatter},
+    mem,
+};
 
 use lox_syntax::ast::expr::Value;
 
@@ -56,6 +59,23 @@ impl Display for RuntimeValue {
             Function(fun) => write!(f, "{}", fun),
             Class(class) => write!(f, "{}", class),
             Object(instance) => write!(f, "{}", instance),
+        }
+    }
+}
+
+impl PartialEq for RuntimeValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::String(l), Self::String(r)) => l == r,
+            (Self::Number(l), Self::Number(r)) => l == r,
+            (Self::Boolean(l), Self::Boolean(r)) => l == r,
+            (Self::Function(l), Self::Function(r)) => std::ptr::eq(
+                l.as_ref() as *const _ as *const (),
+                r.as_ref() as *const _ as *const (),
+            ),
+            (Self::Class(l), Self::Class(r)) => Rc::ptr_eq(l, r),
+            (Self::Object(l), Self::Object(r)) => Rc::ptr_eq(l, r),
+            _ => mem::discriminant(self) == mem::discriminant(other),
         }
     }
 }

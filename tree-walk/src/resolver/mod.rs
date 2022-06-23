@@ -114,19 +114,6 @@ impl<'a> Resolver<'a> {
         self.end_scope();
     }
 
-    fn scoped_if<F>(&mut self, f: F, pred: bool)
-    where
-        F: FnOnce(&mut Self),
-    {
-        if pred {
-            self.begin_scope();
-        }
-        f(self);
-        if pred {
-            self.end_scope();
-        }
-    }
-
     fn scoped_fn<F>(&mut self, f: F, function_type: FunctionType)
     where
         F: FnOnce(&mut Self),

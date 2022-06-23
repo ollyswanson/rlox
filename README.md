@@ -4,7 +4,7 @@
 
 ### Performance
 
-TODO: Proper write benchmarks and write up.
+TODO: Proper benchmarks and write up.
 
 Naive benchmarking shows the Rust implementation of the tree-walk interpreter
 to be performant relative to the Java implementation, but pathological recursion

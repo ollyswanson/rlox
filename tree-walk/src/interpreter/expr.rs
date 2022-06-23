@@ -59,6 +59,7 @@ impl Interpreter {
         match (lvalue, rvalue, binary.op) {
             (Number(l), Number(r), op) => evaluate_arithmetic_expression(l, r, op),
             (String(l), String(r), Add) => Ok(String(format!("{}{}", l, r))),
+            (l, r, Equal) => Ok(Boolean(l == r)),
             (l, r, op) => Err(RuntimeError::TypeError(TypeError {
                 message: format!("Illegal operation {} {} {}", l, op, r).into(),
             })

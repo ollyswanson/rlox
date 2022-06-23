@@ -1,7 +1,4 @@
-use std::fs;
-
 use crate::tree_walk;
-use lox_syntax::Parser;
 
 use crate::args::Args;
 
