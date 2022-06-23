@@ -5,3 +5,6 @@ members = [
     "lox",
     "tree-walk"
 ]
+
+[profile.release]
+debug = true
