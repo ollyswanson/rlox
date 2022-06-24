@@ -1,14 +1,25 @@
-use std::{fmt::Display, ops::Deref};
+use crate::value::Value;
+use std::fmt::Display;
 
 #[derive(Default)]
-pub struct Chunk(Vec<OpCode>);
+pub struct Chunk {
+    code: Vec<OpCode>,
+    constants: Vec<Value>,
+}
 
 impl Chunk {
     pub fn new() -> Chunk {
         Default::default()
     }
     pub fn push_op(&mut self, op: OpCode) {
-        self.0.push(op);
+        self.code.push(op);
+    }
+
+    pub fn push_constant(&mut self, constant: Value) -> u8 {
+        assert!(self.constants.len() < 256);
+
+        self.constants.push(constant);
+        self.constants.len() as u8 - 1
     }
 
     pub fn disassemble(&self, name: &str) {
@@ -17,25 +28,21 @@ impl Chunk {
     }
 }
 
-impl Deref for Chunk {
-    type Target = [OpCode];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl AsRef<[OpCode]> for Chunk {
-    fn as_ref(&self) -> &[OpCode] {
-        &self.0
-    }
-}
-
 impl Display for Chunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (i, op) in self.iter().enumerate() {
-            writeln!(f, "{:04} {}", i, op)?
+        use OpCode::*;
+        for (i, op) in self.code.iter().enumerate() {
+            write!(f, "{:04} ", i)?;
+            match op {
+                Return => writeln!(f, "OP_RETURN"),
+                Constant(i) => writeln!(
+                    f,
+                    "{:16}{:4} '{}'",
+                    "OP_CONSTANT", i, self.constants[*i as usize]
+                ),
+            }?;
         }
+
         Ok(())
     }
 }
@@ -43,14 +50,5 @@ impl Display for Chunk {
 #[derive(Debug, Copy, Clone)]
 pub enum OpCode {
     Return,
-}
-
-impl Display for OpCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use OpCode::*;
-
-        match self {
-            Return => f.write_str("OP_RETURN"),
-        }
-    }
+    Constant(u8),
 }
